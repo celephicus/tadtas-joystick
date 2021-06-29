@@ -12,9 +12,10 @@ The hardware had been built with 3 orthogonally mounted strain gauges of 1Kg cap
 ## Strain Gauge Amplifiers
 The existing amplifiers I decided to reuse, as they have acceptable performance and there is an Arduino library to drive them, not that they are very difficult to interface with. An important point is that they operate at 5V, rather than 3.3V. The modules used are Chinese knockoffs of a ![Sparkfun design](https://www.sparkfun.com/products/13879), see their page for further information.
 
-
 ## New Hardware
 I decided to replace the Arduino Uno as a start as it can only be a USB serial port, and cannot emulate a PC mouse. I have used another controller, the Arduino Pro Micro in the past, as it has an onboard USB controller that can emulate just about any USB device, including the HID ("Human Interface Device") that is the USB profile that is used by mice. I asked a question on my favourite local supplier's forum ![here](https://forum.core-electronics.com.au/t/arduino-for-mouse-emulation/10406) and got some helpful information, including a response from technical support that this board was suitable.
 
 I ended up ordering this part ![Pro Micro - 5V/16MHz](https://core-electronics.com.au/pro-micro-5v-16mhz.html) since it was in stock. I would have preferred to order a version that has the 6 pin ISP header on board, since I usually do my Arduino software development using a hardware debugger connected via this connector, that allows me to load and step through the code, examine variables & memory etc. However it is not much trouble to wire one up. Searching ![Core Electronics](https://core-electronics.com.au) for "32U4" (the Atmel AVR processor used on these boards) will turn up a few options. The ![A-Star 32U4 Micro](https://core-electronics.com.au/a-star-32u4-micro.html) looks a good option as it is tiny.
 
+## Interfacing to Strain Gauge Amplifiers
+HX711 amplifiers are a 24 bit differential input ADC targetted specificlly at strain gauges, and requiring very few external components for a complete interface solution. They have a somewhat bizarre serial interface with a clock input and a serial data output, but where the precise number of clock pulses determines the gain and which of 2 sets of inputs are converted. The standard Arduino library 
