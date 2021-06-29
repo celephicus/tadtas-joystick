@@ -7,7 +7,7 @@ A USB mouse using a force-sensing joystick.
 ## Existing Hardware
 The hardware had been built with 3 orthogonally mounted strain gauges of 1Kg capacity connected to 3 HX711 amplifier modules, in turn connected to an Arduino Uno. Photos below, also including an Arduino Pro Micro (repackaged Leonardo) that was not supplied.
 
-![1](tadtas-joystick-hw-orig-1.jpg) ![2](tadtas-joystick-hw-orig-2.jpg) ![3](tadtas-joystick-hw-orig-3.jpg) 
+![1](/docs/tadtas-joystick-hw-orig-1.jpg) ![2](/docs/tadtas-joystick-hw-orig-2.jpg) ![3](/docs/tadtas-joystick-hw-orig-3.jpg) 
 
 ## Strain Gauge Amplifiers
 The existing amplifiers I decided to reuse, as they have acceptable performance and there is an Arduino library to drive them, not that they are very difficult to interface with. An important point is that they operate at 5V, rather than 3.3V. The modules used are Chinese knockoffs of a ![Sparkfun design](https://www.sparkfun.com/products/13879), see their page for further information.
