@@ -18,3 +18,9 @@ I decided to replace the Arduino Uno as a start as it can only be a USB serial p
 
 I ended up ordering this part ![Pro Micro - 5V/16MHz](https://core-electronics.com.au/pro-micro-5v-16mhz.html) since it was in stock. I would have preferred to order a version that has the 6 pin ISP header on board, since I usually do my Arduino software development using a hardware debugger connected via this connector, that allows me to load and step through the code, examine variables & memory etc. However it is not much trouble to wire one up. Searching ![Core Electronics](https://core-electronics.com.au) for "32U4" (the Atmel AVR processor used on these boards) will turn up a few options. The ![A-Star 32U4 Micro](https://core-electronics.com.au/a-star-32u4-micro.html) looks a good option as it is tiny.
 
+## IO Pin Assignment.
+Since the HX711 library just uses bit bashing to talk to the chips, it doesn't really matter which pins are used, so I just assigned them from D4 up, leaving D0, D1 for the serial port & D2, D3 for I2C, since these often come in handy. So:
+
+* D4, D5: X axis CLK, DATA
+* D6, D7: Y axis CLK, DATA
+* D8, D9: Y axis CLK, DATA
