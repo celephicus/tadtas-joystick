@@ -40,6 +40,12 @@ enum {
 	// GPIO_PIN_DEBUG_LED = 			???,		// Green 'TX' LED on board. Note returned to VCC so inverted.
 	GPIO_PIN_DEBUG_LED_1 = 			17,			// Yellow 'RX' LED on board. 
 	
+	// HX711
+	GPIO_PIN_HX711_CLK = 			4,
+	GPIO_PIN_HX711_DT_X = 			5,
+	GPIO_PIN_HX711_DT_Y = 			6,
+	GPIO_PIN_HX711_DT_Z = 			7,
+	
 	// Serial pins (not used directly).
 	GPIO_PIN_CONSOLE_TXO = 			1,
 	GPIO_PIN_CONSOLE_RXI = 			0,
@@ -52,9 +58,15 @@ enum {
 	GPIO_PIN_MISO = 				14,
 	GPIO_PIN_SCK = 					15,
 	GPIO_PIN_MOSI = 				16,
+	
+	// JTAG
+	GPIO_PIN_JTAG_TDI =				A0,
+	GPIO_PIN_JTAG_TDO =				A1,
+	GPIO_PIN_JTAG_TMS =				A2,
+	GPIO_PIN_JTAG_TCK =				A3,
 };
 
-#define GPIO_PINS_UNUSED 			A0, A2, A3
+#define GPIO_PINS_UNUSED 			
 							
 // Generic debug LED.
 #define GPIO_WANT_DEBUG_LED 1
@@ -68,5 +80,13 @@ GPIO_DECLARE_PIN_ACCESS_FUNCS(DebugLed1, GPIO_PORT_DEBUG_LED_1, GPIO_BIT_DEBUG_L
 
 // Serial ports.
 #define GPIO_SERIAL_CONSOLE				 Serial1
+
+// HX711 amplifiers.
+enum {
+	GPIO_HX711_X,
+	GPIO_HX711_Y,
+	GPIO_HX711_Z,
+	COUNT_GPIO_HX711,
+};
 
 #endif	// GPIO_LOCAL_H__

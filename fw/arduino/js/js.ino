@@ -6,7 +6,7 @@ FILENUM(1);
 
 #include "utils.h"
 #include "regs.h"
-//#include "driver.h"
+#include "driver.h"
 
 #include "console.h"
 #include "console-internals.h"
@@ -17,7 +17,7 @@ FILENUM(1);
 static void debug_init() {
 	watchdog_module_mask_t wdt_mask;
 	const uint16_t mcusr = debugWatchdogInit(&wdt_mask);
-	REGS[REGS_IDX_RESTART] = mcusr | ((uint16_t)wdt_mask << 8);
+	REGS[REGS_IDX_RESTART] = mcusr | ((uint16_t)wdt_mask << 8);	
 }
 
 static void gpio_init() {
@@ -38,6 +38,7 @@ static bool console_cmds_user(char* cmd) {
 		case /** LED1 **/ 0X6DB9: gpioDebugLed1Write(!console_u_pop()); break;
 		REGS_CONSOLE_COMMANDS
 		DEBUG_CONSOLE_COMMANDS
+		DRIVER_CONSOLE_COMMANDS
 		default: return false;
 	}
 	return true;
@@ -57,13 +58,23 @@ static void console_init() {
 }
 	
 void debugRuntimeError(uint8_t fileno, uint16_t lineno, uint8_t errorno) {
-	(void)fileno;
-	(void)lineno;
-	(void)errorno;
 	wdt_reset();
+	GPIO_SERIAL_CONSOLE.print(F("Runtime error: ")); 
+	GPIO_SERIAL_CONSOLE.print(fileno); GPIO_SERIAL_CONSOLE.print(F("."));
+	GPIO_SERIAL_CONSOLE.print(lineno); GPIO_SERIAL_CONSOLE.print(F("."));
+	GPIO_SERIAL_CONSOLE.print(errorno); GPIO_SERIAL_CONSOLE.print(F(": time to die.\r\n"));
+	delay(100);		// Allow serial data to escape.
 	cli();
-	while (1) 
+	gpioDebugLedSetModeOutput();
+	gpioDebugLed1SetModeOutput();
+	gpioDebugLedSet();
+	gpioDebugLed1Clear();
+	while (1) {
+		gpioDebugLedToggle();
+		gpioDebugLed1Toggle();
+		fori(6) delayMicroseconds(16000);		// delay() doesn't work if interrupts off. 
 		wdt_reset();
+	}
 }
 
 void setup() {
@@ -71,7 +82,7 @@ void setup() {
 	gpio_init();
 	regsInit();
 	console_init();
-	//driverInit();
+	driverInit();
 }
 
 static void do_dump_regs() {
@@ -89,14 +100,29 @@ static void do_dump_regs() {
 		s_ticker = 0;
 }
 
+static void do_dump_hx711() {
+    if (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_DUMP_HX711) {
+		int32_t hx711_readings[COUNT_GPIO_HX711];
+		if (driverGetHx711Data(hx711_readings)) {
+			GPIO_SERIAL_CONSOLE.print(F("HX711: ")); GPIO_SERIAL_CONSOLE.print(millis()); GPIO_SERIAL_CONSOLE.print(F(", ")); 
+			fori (COUNT_GPIO_HX711) {
+				GPIO_SERIAL_CONSOLE.print(hx711_readings[i]);
+				GPIO_SERIAL_CONSOLE.print(F(", "));
+			}
+			consolePrint(CONSOLE_PRINT_NEWLINE, 0);
+		}
+    }
+}
+
 void loop() {
 	FConsole.service();
-	//driverService();
+	driverService();
 	
 	// Dump registers every 100ms.
 	runEveryU16(100) {
 		do_dump_regs();
 	}
+	do_dump_hx711();
 	
 	debugKickWatchdog(DEBUG_WATCHDOG_MASK_MAINLOOP);
 }

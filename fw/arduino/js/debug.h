@@ -15,14 +15,20 @@
 void debugRuntimeError(uint8_t fileno, uint16_t lineno, uint8_t errorno) __attribute__((noreturn));
 
 // Convenience function to raise a runtime error...
-#define RUNTIME_ERROR(_errorno) debugRuntimeError(F_NUM, __LINE__, (_errorno))
+#define DEBUG_RUNTIME_ERROR(_errorno) debugRuntimeError(F_NUM, __LINE__, (_errorno))
+
+enum {
+	RUNTIME_ERROR_ASSERT = 1,
+	RUNTIME_ERROR_WATCHDOG_RESTART = 2,
+	RUNTIME_ERROR_USER = 16
+};
 
 // Our assert macro does not print the condition that failed, contrary to the usual version. This is intentional, it conserves
 // string space on the target, and the user just has to report the file & line numbers.
 #ifndef NDEBUG  /* A release build defines this macro, a debug build defines DEBUG. */ 
-#define ASSERT(cond_) do { 				\
-    if (!(cond_)) 						\
-        RUNTIME_ERROR(0); 				\
+#define ASSERT(cond_) do { 							\
+    if (!(cond_)) 									\
+        DEBUG_RUNTIME_ERROR(RUNTIME_ERROR_ASSERT); 	\
 } while (0)
 #else   
     #define ASSERT(cond_) do { /* empty */ } while (0)
@@ -67,10 +73,11 @@ uint8_t debugWatchdogInit(watchdog_module_mask_t* old_mask);
 void debugKickWatchdog(watchdog_module_mask_t m);
 
 // Check if the restart code returned by debugWatchdogInit() indicated a watchdog restart.
-bool debugIsRestartWatchdog(uint16_t rst); 
+bool debugIsRestartWatchdog(uint8_t rst); 
 
 #define DEBUG_CONSOLE_COMMANDS																																\
 	case /** RESTART **/ 0X7092: while (1) /* empty */; break;																								\
-	case /** RT-ERROR **/ 0XADB6: RUNTIME_ERROR(console_u_pop()); break;																					\
+	case /** RT-ERROR **/ 0XADB6: DEBUG_RUNTIME_ERROR(console_u_pop()); break;																				\
+	case /** ASSERT **/ 0X5007: ASSERT(0); break;																											\
 
 #endif // DEBUG_H_

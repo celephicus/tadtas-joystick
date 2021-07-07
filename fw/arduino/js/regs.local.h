@@ -32,7 +32,7 @@ void regsExtraSetDefaults(); // Defined in regs.local.cpp
 // Flags are defined with 3 parameters, name, bit position and a short description that is turned into help text. 
 #define REGS_FLAGS_DEFS(gen_)																							\
  /* Signal flags. */																									\
-																														\
+ gen_(HX711_UPDATE,					0,  "HX711 data available")															\
  /* Debug flags. */																										\
 																														\
  /* Fault flags, assigned down from bit 15. */																			\
@@ -43,6 +43,7 @@ void regsExtraSetDefaults(); // Defined in regs.local.cpp
 #define REGS_ENABLES_DEFS(gen_)																							\
  gen_(DUMP_REGS,		0,	"Regs values dump to console")																\
  gen_(DUMP_REGS_FAST,	1,	"Dump at 5/s rather than 1/s")																\
+ gen_(DUMP_HX711,		2,	"Dump HX711 readings")																		\
 
 // Generate FLAGS defs.
 //

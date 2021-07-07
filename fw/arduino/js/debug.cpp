@@ -53,10 +53,18 @@ static void check_startup_signature() {
 uint8_t debugWatchdogInit(watchdog_module_mask_t* old_mask) {
 	uint8_t mcusr = MCUSR;		// (JTRF) WDRF BORF EXTRF PORF , JTRF only on JTAG parts
 	MCUSR = 0;					// Necessary to disable watchdog on some processors. 
+
+    setup_watchdog();			// Enable/disable the 'dog. 
+	
+#if CFG_RUNTIME_ERROR_ON_WATCHDOG_RESTART	// Runtime error of watchdog?
+	if (debugIsRestartWatchdog(mcusr))
+		DEBUG_RUNTIME_ERROR(RUNTIME_ERROR_WATCHDOG_RESTART);
+#endif	
+
 	if (NULL != old_mask)		// Grab watchdog mask from possible previous run.
 		*old_mask = f_wdacc;
-    setup_watchdog();
+		
 	return mcusr;
 }
 	
-bool debugIsRestartWatchdog(uint16_t rst) { return !!(rst & _BV(WDRF)); }
+bool debugIsRestartWatchdog(uint8_t rst) { return !!(rst & _BV(WDRF)); }
