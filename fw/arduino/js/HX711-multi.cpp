@@ -10,7 +10,7 @@ HX711MULTI::HX711MULTI(int count, byte *dout, byte pd_sck, byte gain) {
 
 	pinMode(PD_SCK, OUTPUT);
 	for (int i=0; i<count; i++) {
-		pinMode(DOUT[i], INPUT);
+		pinMode(DOUT[i], INPUT_PULLUP);
 	}
 	set_gain(gain);
 
