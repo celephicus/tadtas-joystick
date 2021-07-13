@@ -5,7 +5,7 @@
 //
 
 // Define version of regs schema. If you change this file, increment the number to force any existing EEPROM to flag as corrupt. 
-#define REGS_VERSION 1
+#define REGS_VERSION 3
 
 // Extra NV stuff. 
 typedef struct {
@@ -22,6 +22,9 @@ void regsExtraSetDefaults(); // Defined in regs.local.cpp
 																																			\
  /* NV regs. */																																\
  gen_(ENABLES,						0,									"Enable flags")														\
+ gen_(HX711_FILTER_K,				0,									"Filtering parameter applied to HX711 readings")					\
+ gen_(MOUSE_XY_DEADBAND,			500,								"mouse deadband")													\
+ gen_(MOUSE_XY_SCALE,				2000,								"mouse scale factor reading -> delta")								\
  
 // Define the start of the NV regs. The region is from this index up to the end of the register array. 
 #define REGS_START_NV_IDX REGS_IDX_ENABLES
@@ -44,6 +47,11 @@ void regsExtraSetDefaults(); // Defined in regs.local.cpp
  gen_(DUMP_REGS,		0,	"Regs values dump to console")																\
  gen_(DUMP_REGS_FAST,	1,	"Dump at 5/s rather than 1/s")																\
  gen_(DUMP_HX711,		2,	"Dump HX711 readings")																		\
+ gen_(MOUSE_EMULATION,	3,	"Enable mouse emulation")																	\
+ gen_(AXIS_INVERT_X,	4,	"Invert x axis")																			\
+ gen_(AXIS_INVERT_Y,	5,	"Invert y axis")																			\
+ gen_(AXIS_INVERT_Z,	6,	"Invert z axis")																			\
+ 
 
 // Generate FLAGS defs.
 //

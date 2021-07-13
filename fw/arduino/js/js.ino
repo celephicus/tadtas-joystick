@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "Mouse.h"
 
 #include "project_config.h"
 #include "debug.h"
@@ -83,6 +84,7 @@ void setup() {
 	regsInit();
 	console_init();
 	driverInit();
+	Mouse.begin();
 }
 
 static void do_dump_regs() {
@@ -100,18 +102,25 @@ static void do_dump_regs() {
 		s_ticker = 0;
 }
 
-static void do_dump_hx711() {
-    if (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_DUMP_HX711) {
-		int32_t hx711_readings[COUNT_GPIO_HX711];
-		if (driverGetHx711Data(hx711_readings)) {
+static void service_hx711() {
+	int32_t hx711_readings[COUNT_GPIO_HX711];
+	if (driverGetHx711Data(hx711_readings)) {
+		if (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_DUMP_HX711) {
 			GPIO_SERIAL_CONSOLE.print(F("HX711: ")); GPIO_SERIAL_CONSOLE.print(millis()); GPIO_SERIAL_CONSOLE.print(F(", ")); 
-			fori (COUNT_GPIO_HX711) {
-				GPIO_SERIAL_CONSOLE.print(hx711_readings[i]);
-				GPIO_SERIAL_CONSOLE.print(F(", "));
-			}
+			driverPrintHx711Data(hx711_readings);
 			consolePrint(CONSOLE_PRINT_NEWLINE, 0);
 		}
-    }
+ 	
+		if (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_MOUSE_EMULATION) {
+			int8_t delta[2] = {0, 0};
+			fori (2) {
+				if ((hx711_readings[i] > +REGS[REGS_IDX_MOUSE_XY_DEADBAND]) || (hx711_readings[i] < -REGS[REGS_IDX_MOUSE_XY_DEADBAND]))
+					delta[i] = utilsLimitI32(hx711_readings[i] / (int32_t)REGS[REGS_IDX_MOUSE_XY_SCALE], -100, +100);
+			}
+			if (delta[0] || delta[1])
+				Mouse.move(delta[0], delta[1]);
+		}
+	}
 }
 
 void loop() {
@@ -122,7 +131,7 @@ void loop() {
 	runEveryU16(100) {
 		do_dump_regs();
 	}
-	do_dump_hx711();
+	service_hx711();
 	
 	debugKickWatchdog(DEBUG_WATCHDOG_MASK_MAINLOOP);
 }
