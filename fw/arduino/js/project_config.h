@@ -9,14 +9,11 @@
 // Watchdog. 
 #define CFG_WATCHDOG_TIMEOUT WDTO_2S   
 #define CFG_WATCHDOG_ENABLE 1
-#define CFG_WATCHDOG_MODULE_COUNT 0
-#define CFG_RUNTIME_ERROR_ON_WATCHDOG_RESTART 0
+#define CFG_WATCHDOG_MODULE_COUNT 0		// How many extra modules to kick the dog apart from main and a timer ISR?
+#define CFG_RUNTIME_ERROR_ON_WATCHDOG_RESTART 0		// If true raise a runtime error on a watchdog restart. 
 
-// Extra help text for console.
-#define CFG_WANT_VERBOSE_CONSOLE 1
-
-// Which sort of printf for serial port. 
-#define CFG_SERIAL_PRINTF_USING_MYPRINTF
+// Regs module settings...
+#define CFG_WANT_CONSOLE_PRINT_FOR_REGS 1 // Define regsPrintRegValue() to use consolePrint(). Requires regs_t to be compatible with console_cell_t. 
 
 // Console speed.
 #define CFG_CONSOLE_BAUDRATE 115200

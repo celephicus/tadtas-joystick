@@ -7,6 +7,11 @@
 // Define version of regs schema. If you change this file, increment the number to force any existing EEPROM to flag as corrupt. 
 #define REGS_VERSION 3
 
+// Registers hold values of this type. It can be signed if required. 
+typedef uint16_t regs_t;
+static const regs_t REGS_MAXVAL = 65535;
+#define REGS_VAL_SIGNED 0
+
 // Extra NV stuff. 
 typedef struct {
 	// uint8_t event_trace_mask[EVENT_TRACE_MASK_SIZE];
@@ -51,7 +56,6 @@ void regsExtraSetDefaults(); // Defined in regs.local.cpp
  gen_(AXIS_INVERT_X,	4,	"Invert x axis")																			\
  gen_(AXIS_INVERT_Y,	5,	"Invert y axis")																			\
  gen_(AXIS_INVERT_Z,	6,	"Invert z axis")																			\
- 
 
 // Generate FLAGS defs.
 //

@@ -37,7 +37,10 @@ static bool console_cmds_user(char* cmd) {
 		case /** # **/ 0XB586: console_raise(CONSOLE_RC_STATUS_IGNORE_TO_EOL); break;
 		case /** LED **/ 0XDC88: gpioDebugLedWrite(!console_u_pop()); break;
 		case /** LED1 **/ 0X6DB9: gpioDebugLed1Write(!console_u_pop()); break;
-		REGS_CONSOLE_COMMANDS
+		REGS_CONSOLE_COMMANDS_NV
+		REGS_CONSOLE_COMMANDS_ACCESS
+		REGS_CONSOLE_COMMANDS_PRINT
+		REGS_CONSOLE_COMMANDS_PRINT_VERBOSE
 		DEBUG_CONSOLE_COMMANDS
 		DRIVER_CONSOLE_COMMANDS
 		default: return false;
@@ -45,7 +48,7 @@ static bool console_cmds_user(char* cmd) {
 	return true;
 }
 static void console_init() {
-	GPIO_SERIAL_CONSOLE.begin(115200);
+	GPIO_SERIAL_CONSOLE.begin(CFG_CONSOLE_BAUDRATE);
 	while (!GPIO_SERIAL_CONSOLE) 
 		/* empty */ ;
 	
@@ -94,7 +97,7 @@ static void do_dump_regs() {
 		if (--s_ticker <= 0) {
 			s_ticker = (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_DUMP_REGS_FAST) ? 2 : 10; // Dump 5Hz or 1Hz.
 			GPIO_SERIAL_CONSOLE.print(F("Regs: ")); GPIO_SERIAL_CONSOLE.print(millis()); GPIO_SERIAL_CONSOLE.print(F(": ")); 
-			regsPrintValuesRam();
+			regsPrintRegValuesRam();
 			consolePrint(CONSOLE_PRINT_NEWLINE, 0);
 		}
     }
