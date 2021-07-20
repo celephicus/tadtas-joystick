@@ -24,17 +24,20 @@ SCALING_VALUES = dict(zip(SCALING_TEXT, [8 + 10 ** s for s in SCALING]))
 
 
 
-js_layout = [ [sg.Button('Zero', key='-ZERO-'), ]] + [
+js_layout = [ [
+	sg.Button('Zero', key='-ZERO-'), 
+	sg.Text('Scale'), 
+	sg.Combo(values=SCALING_TEXT, metadata=SCALING_VALUES, readonly=True, size=(7, 1), default_value=SCALING_TEXT[0], key='-SCALE-'), 
+	sg.Text('Filter'), 
+	sg.Combo(values=list(map(str, range(5))), readonly=True, size=(7, 1), default_value='0', enable_events=True, key='-FILTER-'), 
+] ] + [
 		[ 
 		sg.Text(z, size=(1, 1)), 
-		sg.Combo(values=SCALING_TEXT, metadata=SCALING_VALUES, readonly=True, size=(7, 1), default_value=SCALING_TEXT[0], 
-		  enable_events=True, key='-{}-SCALE-'.format(z)), 
 		sg.ProgressBar(1000, orientation='h', size=(45, 20), key='-{}-BARGRAPH-'.format(z)), 
 		sg.Text(size=(10, 1), background_color='green', text_color='red', key='-{}-VALUE-'.format(z)),
 	] for z in 'XYZ'
 ]
-import pprint
-pprint.pprint(js_layout)
+
 layout = [
 	[ sg.Frame('Serial Port', comms_layout) ],
 	[ sg.Frame('Joystick', js_layout) ],
@@ -62,8 +65,8 @@ def refresh_connect_button():
 	win['-CONNECT-'].update(text="Connect" if serial_port is None else "Disconnect")
 
 def refresh_joystick_values():
+	win['-SCALE-'].update(disabled=not connected)
 	for z in 'XYZ':
-		win['-{}-SCALE-'.format(z)].update(disabled=not connected)
 		win['-{}-BARGRAPH-'.format(z)].update(0)		# Just set curent to zero, if we are connected then it will get updated.
 		win['-{}-VALUE-'.format(z)].update(value='0')
 
@@ -90,16 +93,18 @@ def do_connect_action(port_description):
 			close_serial_port()
 			log("failed.")
 		else:
+			send_js_command('1 js-dump')
 			log("OK.")
 	else:
+		send_js_command('0 js-dump')		# Turn off dump.
 		log("Closed {}.".format(serial_port.port))
 		close_serial_port()
 	refresh_connect_button()
 
 def do_update_values_action(vals):
+	scale = win['-SCALE-'].metadata[win['-SCALE-'].get()]
 	for i, v in enumerate(vals):
 		z = 'XYZ'[i]
-		scale = win['-{}-SCALE-'.format(z)].metadata[win['-{}-SCALE-'.format(z)].get()]
 		scaled_val = (1.0 + float(v) / scale) * 500.0
 		win['-{}-BARGRAPH-'.format(z)].update(int(scaled_val+0.5))		
 		win['-{}-VALUE-'.format(z)].update(value=str(v))
@@ -130,11 +135,14 @@ def do_read_joystick():
 							else:
 								do_update_values_action(map(int, vals[2:5]))
 					raw_line = b''
-def do_zero():
-	try: 
-		serial_port.write(b'js-z\r')
-	except serial.serialutil.SerialException: 
-		pass	
+
+def send_js_command(cmd):
+	if serial_port is not None:
+		log("Sent command `{}.'".format(cmd))
+		try: 
+			serial_port.write((cmd + '\r').encode('ascii'))
+		except serial.serialutil.SerialException: 
+			pass	
 							
 while True:
 	e, v = win.read(timeout=20)
@@ -151,7 +159,9 @@ while True:
 	elif e == '-CONNECT-':
 		do_connect_action(v['-PORT-'])
 	elif e == '-ZERO-':
-		do_zero()
+		send_js_command('js-z')
+	elif e == '-FILTER-':
+		send_js_command('{} 3 v!'.format(v['-FILTER-']))
 
 
 win.close()
