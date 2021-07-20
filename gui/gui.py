@@ -3,10 +3,11 @@ import serial, serial.tools.list_ports
 import sys
 
 serial_port = None
+connected = True
 
 comms_layout = [
 	[ 
-		sg.Text('Port:'), 
+		sg.Text('Port'), 
 		sg.Combo(values=[], key='-PORT-', size=(30, 1), disabled=True), # Note can be in one of readonly or disabled or enabled. 
 		sg.Button('Refresh', key='-REFRESH-'),
 		sg.Button('Connect', key='-CONNECT-'),
@@ -16,11 +17,30 @@ comms_layout = [
 	[ sg.Multiline('', key='-LOG-', size=(None, 5), autoscroll=True, auto_refresh=True, write_only=True) ],
 ]
 
+SCALING = (6, 5, 4, 3, 2, 1)	# Powers of 10.
+SUPERSCRIPTS = u"\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079"
+SCALING_TEXT = [u"\u00B1"+u"8"+u"\u00d7"+u"10{}".format(SUPERSCRIPTS[s]) for s in SCALING]
+SCALING_VALUES = dict(zip(SCALING_TEXT, [8 + 10 ** s for s in SCALING]))
+
+
+
+js_layout = [ [sg.Button('Zero', key='-ZERO-'), ]] + [
+		[ 
+		sg.Text(z, size=(1, 1)), 
+		sg.Combo(values=SCALING_TEXT, metadata=SCALING_VALUES, readonly=True, size=(7, 1), default_value=SCALING_TEXT[0], 
+		  enable_events=True, key='-{}-SCALE-'.format(z)), 
+		sg.ProgressBar(1000, orientation='h', size=(45, 20), key='-{}-BARGRAPH-'.format(z)), 
+		sg.Text(size=(10, 1), background_color='green', text_color='red', key='-{}-VALUE-'.format(z)),
+	] for z in 'XYZ'
+]
+import pprint
+pprint.pprint(js_layout)
 layout = [
 	[ sg.Frame('Serial Port', comms_layout) ],
+	[ sg.Frame('Joystick', js_layout) ],
 ]
 	
-win = sg.Window('Customise your Journey', layout, finalize=True)
+win = sg.Window('TADTas Zero Force Joystick Evaluator', layout, finalize=True)
 
 def log(*args, **kwargs):
 	print(*args, **kwargs, file=sys.stderr)
@@ -40,10 +60,17 @@ def refresh_ports():
 
 def refresh_connect_button():
 	win['-CONNECT-'].update(text="Connect" if serial_port is None else "Disconnect")
-	
-# Initial fill of combo box at startup. 
+
+def refresh_joystick_values():
+	for z in 'XYZ':
+		win['-{}-SCALE-'.format(z)].update(disabled=not connected)
+		win['-{}-BARGRAPH-'.format(z)].update(0)		# Just set curent to zero, if we are connected then it will get updated.
+		win['-{}-VALUE-'.format(z)].update(value='0')
+
+## Initialise.
 refresh_ports()
 refresh_connect_button()
+refresh_joystick_values()
 
 def close_serial_port():
 	global serial_port
@@ -58,7 +85,7 @@ def do_connect_action(port_description):
 		comport_device = win['-PORT-'].metadata[port_description]
 		log("Connect: {} ".format(comport_device), end='')
 		try:
-			serial_port = serial.Serial(comport_device, baudrate=115200)
+			serial_port = serial.Serial(comport_device, baudrate=115200, timeout=0.01)
 		except serial.serialutil.SerialException:
 			close_serial_port()
 			log("failed.")
@@ -68,20 +95,63 @@ def do_connect_action(port_description):
 		log("Closed {}.".format(serial_port.port))
 		close_serial_port()
 	refresh_connect_button()
-		
+
+def do_update_values_action(vals):
+	for i, v in enumerate(vals):
+		z = 'XYZ'[i]
+		scale = win['-{}-SCALE-'.format(z)].metadata[win['-{}-SCALE-'.format(z)].get()]
+		scaled_val = (1.0 + float(v) / scale) * 500.0
+		win['-{}-BARGRAPH-'.format(z)].update(int(scaled_val+0.5))		
+		win['-{}-VALUE-'.format(z)].update(value=str(v))
+
+raw_line = b''
+def do_read_joystick():
+	global raw_line
+	if serial_port is not None:
+		try: 
+			raw_line = raw_line + serial_port.readline()
+		except serial.serialutil.SerialException: 
+			close_serial_port()
+			log("Serial port exception, port closed.")
+			refresh_connect_button()
+		else:
+			if raw_line:
+				if raw_line[-1] == 10:
+					try: 
+						line = raw_line.decode('ascii').strip()
+					except ValueError: 
+						log("Could not decode `{}'.".format(raw_line))
+					else:
+						log(line)
+						if line.startswith("HX711:"):
+							vals = line.split()
+							if len(vals) != 5:
+								log("Invalid format.")
+							else:
+								do_update_values_action(map(int, vals[2:5]))
+					raw_line = b''
+def do_zero():
+	try: 
+		serial_port.write(b'js-z\r')
+	except serial.serialutil.SerialException: 
+		pass	
+							
 while True:
 	e, v = win.read(timeout=20)
 	if e == '__TIMEOUT__':
-		# Do something!
+		do_read_joystick()
 		continue
 	print(e, v)
 	if e in (sg.WIN_CLOSED, 'Exit'):
 		break
-	if e == '-REFRESH-':
+	elif e == '-REFRESH-':
 		refresh_ports()
-	if e == '-CLEAR-LOG-':
+	elif e == '-CLEAR-LOG-':
 		win['-LOG-'].update(value='')
-	if e == '-CONNECT-':
+	elif e == '-CONNECT-':
 		do_connect_action(v['-PORT-'])
+	elif e == '-ZERO-':
+		do_zero()
+
 
 win.close()

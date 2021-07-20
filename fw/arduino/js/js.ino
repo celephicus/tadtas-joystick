@@ -109,7 +109,7 @@ static void service_hx711() {
 	int32_t hx711_readings[COUNT_GPIO_HX711];
 	if (driverGetHx711Data(hx711_readings)) {
 		if (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_DUMP_HX711) {
-			GPIO_SERIAL_CONSOLE.print(F("HX711: ")); GPIO_SERIAL_CONSOLE.print(millis()); GPIO_SERIAL_CONSOLE.print(F(", ")); 
+			GPIO_SERIAL_CONSOLE.print(F("HX711: ")); GPIO_SERIAL_CONSOLE.print(millis()); GPIO_SERIAL_CONSOLE.print(F(" ")); 
 			driverPrintHx711Data(hx711_readings);
 			consolePrint(CONSOLE_PRINT_NEWLINE, 0);
 		}

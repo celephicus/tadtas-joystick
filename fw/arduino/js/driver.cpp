@@ -25,7 +25,7 @@ int32_t filter(filter_accum_t* accum, int32_t input, uint8_t k, bool reset=false
 #else
 	const int32_t mult = 1L << k;
 	*accum = reset ? ((filter_accum_t)input * mult) : (*accum - (*accum / mult) + (filter_accum_t)input); 
-	return (int32_t)(*accum / mult);		// Is right shift on signed arithmetic or logical?
+	return (int32_t)(*accum / mult);		
 #endif
 }
 void filterInit(filter_accum_t* accum, int32_t input, uint8_t k) { filter(accum, input, k, true); }
@@ -51,7 +51,7 @@ static void service_hx711() {
 		f_hx711.readRaw((long*)raw);
 		
 		fori(COUNT_GPIO_HX711) {
-			f_hx711_data[i].raw = (REGS[REGS_IDX_ENABLES] & (REGS_ENABLES_MASK_AXIS_INVERT_X << i)) ? - raw[i] : raw[i];		// Copy raw readings with inversion set by flag. 
+			f_hx711_data[i].raw = (REGS[REGS_IDX_ENABLES] & (REGS_ENABLES_MASK_AXIS_INVERT_X << i)) ? -raw[i] : raw[i];		// Copy raw readings with inversion set by flag. 
 			f_hx711_data[i].filtered = filter(&f_hx711_data[i].accum, f_hx711_data[i].raw, REGS[REGS_IDX_HX711_FILTER_K]);	// Apply filter.
 		}
 		regsWriteMaskFlags(REGS_FLAGS_MASK_HX711_UPDATE, true);
@@ -81,7 +81,7 @@ void driverZeroHx711() {
 void driverPrintHx711Data(const int32_t* data) {
 	fori (COUNT_GPIO_HX711) {
 		GPIO_SERIAL_CONSOLE.print(data[i]);
-		if (i < COUNT_GPIO_HX711 - 1) GPIO_SERIAL_CONSOLE.print(F(", "));
+		if (i < COUNT_GPIO_HX711 - 1) GPIO_SERIAL_CONSOLE.print(F(" "));
 	}
 }
 
