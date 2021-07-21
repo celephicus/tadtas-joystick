@@ -141,13 +141,9 @@ T utilsAbs(T x)  {
 #define utilsAbsI16 utilsAbs<int16_t>
 #define utilsAbsI32 utilsAbs<int32_t>
 
-// Update the bits matching the mask in the value. Return true if value has changed. 
+// Set/clear all bits in the mask in the value. Usually the mask will have a single set bit. Return true if value has changed. 
 template <typename T>
-bool utilsUpdateFlags(T* flags, T mask, T val) { const T old = *flags; *flags = (*flags & ~mask) | val; return (old != *flags); }
-
-// Update the bits matching the mask in the value. Return true if value has changed. 
-template <typename T>
-bool utilsWriteFlags(T* flags, T mask, bool s) { const T old = *flags; if (s) *flags |=  mask; else *flags &= ~mask; return (old != *flags); }
+bool utilsWriteBitmask(T& val, T mask, bool s) { const T old_val = val; if (s) val |=  mask; else val &= ~mask; return (old_val != val); }
 
 // Integer division spreading error.
 template <typename T>
@@ -198,14 +194,15 @@ bool utilsMultiThreshold(const uint16_t* thresholds, uint8_t count, uint16_t hys
 					= y[n-1] - a.(y[n-1] + x[n])
 	In order not to lose precision we do the calculation scaled by a power of 2, 2^k, which can be calculated by shifting. This does require
 	an accumulator to hold the scaled value of y.
+	When k is changed call reset to reload the accumulator. 
 */
-template <typename T>
-void utilsFilterInit(T* accum, uint16_t input, uint8_t k) { utilsFilter(accum, input, k, true); }
+template <typename T, typename U>
+void utilsFilterInit(T& accum, U input, uint8_t k) { (void)utilsFilter(accum, input, k, true); }
 
-template <typename T>
-uint16_t utilsFilter(T* accum, uint16_t input, uint8_t k, bool reset) {
-	*accum = reset ? ((T)input << k) : (*accum - (*accum >> k) + (T)input); 
-	return (uint16_t)(*accum >> k);
+template <typename T, typename U>
+U utilsFilter(T& accum, U input, uint8_t k, bool reset=false) {
+	accum = reset ? ((T)input << k) : (accum - (accum >> k) + (T)input); 
+	return (U)(accum >> k);
 }
 
 // Simple implementation of strtoul for unsigned ints. String may have leading whitespace and an optional leading '+'. Then digits up to one less than the 

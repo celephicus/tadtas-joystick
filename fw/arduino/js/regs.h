@@ -50,19 +50,13 @@ void regsNvSetDefaults();
 void regsNvSetRegisterDefaults(uint8_t start, uint8_t end);
 
 // Return flags register, this compiles to two lds instructions. 
-static inline regs_t regsGetFlags() { return REGS[REGS_IDX_FLAGS]; }
+static inline regs_t regsFlags() { return REGS[REGS_IDX_FLAGS]; }
 
 // Set/clear all bits in the mask in the given register. Return true if value has changed. 
-bool regsWriteMask(uint8_t idx, regs_t mask, bool s);
-
-// Write the register at index idx bits in mask m with value val. Obviously no bits are set in v that are clear in m. Return true if value has changed. 
-bool regsUpdateMask(uint8_t idx, regs_t mask, regs_t val);
+bool regsWriteMask(uint8_t idx, regs_t mask, bool s); 
 
 // Set/clear all bits in the mask in the flags register. Return true if value has changed. 
-bool regsWriteMaskFlags(regs_t mask, bool s);
-
-// Update bits in flags register with set bits in mask m with mask value. Return true if value has changed. 
-bool regsUpdateMaskFlags(regs_t mask, regs_t val);
+bool regsFlagsWriteMask(regs_t mask, bool s);
 
 // Return the name of the register derived from the settings.local.h file. 
 const char* regsGetRegisterName(uint8_t idx);
@@ -94,25 +88,27 @@ void regsPrintRegValuesAll();
 // Print only RAM register values. Used for dumping regs to the console at intervals. 
 void regsPrintRegValuesRam();
 
-// Commands for working with nv settings. Read from NV, write to NV, load default values. 
+// Commands for working with NV settings. Read from NV, write to NV, load default values. 
 #define REGS_CONSOLE_COMMANDS_NV																													\
-	case /** NV-DEFAULT **/ 0xfcdb: regsNvSetDefaults(); break;																						\
-	case /** NV-W **/ 0xa8c7: regsNvWrite(); break;																									\
-	case /** NV-R **/ 0xa8c2: regsNvRead(); break;																									
+	case /** NV-DEFAULT **/ 0XFCDB: regsNvSetDefaults(); break;																						\
+	case /** NV-W **/ 0XA8C7: regsNvWrite(); break;																									\
+	case /** NV-R **/ 0XA8C2: regsNvRead(); break;																									
 
 // Commands v@, v! to read/write register value. Only if regs_t type is compatible with console_cell_t. 
 #define REGS_CONSOLE_COMMANDS_ACCESS																												\
-	case /** V! **/ 0x7472: { const uint8_t i = console_u_pop(); console_verify_bounds(i, REGS_COUNT); REGS[i] = console_u_pop(); } break;			\
-	case /** V@ **/ 0x7413: { const uint8_t i = console_u_pop(); console_verify_bounds(i, REGS_COUNT); console_u_push(REGS[i]); } break;			
+	case /** V! **/ 0X7472: { const uint8_t i = console_u_pop(); console_verify_bounds(i, REGS_COUNT); REGS[i] = console_u_pop(); } break;			\
+	case /** V@ **/ 0X7413: { const uint8_t i = console_u_pop(); console_verify_bounds(i, REGS_COUNT); console_u_push(REGS[i]); } break;			
 
 // Cmmands ?v, ??v to print one or all register values. Requires that regsPrintRegValue() is defined.
 #define REGS_CONSOLE_COMMANDS_PRINT																													\
-	case /** ?V **/ 0x688c: { const uint8_t i = console_u_pop(); console_verify_bounds(i, REGS_COUNT); regsPrintRegValue(i); } break;				\
-	case /** ??V **/ 0x85d3: regsPrintRegValuesAll(); break;																						
+	case /** ?V **/ 0X688C: { const uint8_t i = console_u_pop(); console_verify_bounds(i, REGS_COUNT); regsPrintRegValue(i); } break;				\
+	case /** ??V **/ 0X85D3: regsPrintRegValuesAll(); break;																						\
+    case /** DUMP **/ 0X4FE9: regsWriteMask(REGS_IDX_ENABLES, REGS_ENABLES_MASK_DUMP_REGS, (console_u_tos() > 0));									\
+							  regsWriteMask(REGS_IDX_ENABLES, REGS_ENABLES_MASK_DUMP_REGS_FAST, (console_u_pop() > 1)); break;;
 
 // Command ???v to dump settings is glorious detail.
 #define REGS_CONSOLE_COMMANDS_PRINT_VERBOSE																											\
-	case /** ???V **/ 0x3cac: fori (REGS_COUNT) {																									\
+	case /** ???V **/ 0X3CAC: fori (REGS_COUNT) {																									\
 			consolePrint(CONSOLE_PRINT_NEWLINE, 0);																									\
 			consolePrint(CONSOLE_PRINT_SIGNED, i);																									\
 			consolePrint(CONSOLE_PRINT_STR_P, (console_cell_t)regsGetRegisterName(i));																\

@@ -28,7 +28,6 @@ int32_t filter(filter_accum_t* accum, int32_t input, uint8_t k, bool reset=false
 	return (int32_t)(*accum / mult);		
 #endif
 }
-void filterInit(filter_accum_t* accum, int32_t input, uint8_t k) { filter(accum, input, k, true); }
 
 // Holds state of single HX711. 
 typedef struct {
@@ -47,14 +46,22 @@ static void init_hx711() {
 
 static void service_hx711() {
 	if (f_hx711.is_ready()) {
+		static uint8_t filter_k = 0xff;
 		int32_t raw[COUNT_GPIO_HX711];		// Get raw readings.
-		f_hx711.readRaw((long*)raw);
+		(void)f_hx711.readRaw((long*)raw);		// Can't fail, we just checked.
+		
+		// When we change the filter rate we must reset it to avoid big bumps.
+		bool filter_reset = false;
+		if (REGS[REGS_IDX_HX711_FILTER_K] != filter_k) {
+			filter_k = REGS[REGS_IDX_HX711_FILTER_K];
+			filter_reset = true;
+		}
 		
 		fori(COUNT_GPIO_HX711) {
 			f_hx711_data[i].raw = (REGS[REGS_IDX_ENABLES] & (REGS_ENABLES_MASK_AXIS_INVERT_X << i)) ? -raw[i] : raw[i];		// Copy raw readings with inversion set by flag. 
-			f_hx711_data[i].filtered = filter(&f_hx711_data[i].accum, f_hx711_data[i].raw, REGS[REGS_IDX_HX711_FILTER_K]);	// Apply filter.
+			f_hx711_data[i].filtered = utilsFilter<int32_t, int32_t>(f_hx711_data[i].accum, f_hx711_data[i].raw, filter_k, filter_reset);	// Apply filter.
 		}
-		regsWriteMaskFlags(REGS_FLAGS_MASK_HX711_UPDATE, true);
+		regsFlagsWriteMask(REGS_FLAGS_MASK_HX711_UPDATE, true);
 	}
 }
 
@@ -64,10 +71,10 @@ void driverPeekHx711Data(int32_t* data) {
 }
 
 bool driverGetHx711Data(int32_t* data) {
-	bool available = !!(regsGetFlags() & REGS_FLAGS_MASK_HX711_UPDATE);
+	bool available = !!(regsFlags() & REGS_FLAGS_MASK_HX711_UPDATE);
 	if (available) {
 		driverPeekHx711Data(data);
-		regsWriteMaskFlags(REGS_FLAGS_MASK_HX711_UPDATE, false);
+		regsFlagsWriteMask(REGS_FLAGS_MASK_HX711_UPDATE, false);
 	}
 	return available;
 }

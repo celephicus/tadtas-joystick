@@ -75,11 +75,8 @@ void regsNvWrite() {
     eepromDriverWrite(&EEPROM_BLK);
 }
 
-bool regsWriteMask(uint8_t idx, regs_t mask, bool s) { return utilsWriteFlags<regs_t>(&g_registers.vals[idx], mask, s); }
-bool regsUpdateMask(uint8_t idx, regs_t mask, regs_t value) { return utilsUpdateFlags<regs_t>(&g_registers.vals[idx], mask, value); }
-
-bool regsWriteMaskFlags(regs_t mask, bool s) { return regsWriteMask(REGS_IDX_FLAGS, mask, s); }
-bool regsUpdateMaskFlags(regs_t mask, regs_t value) { return regsUpdateMask(REGS_IDX_FLAGS, mask, value); }
+bool regsWriteMask(uint8_t idx, regs_t mask, bool s) { return utilsWriteBitmask<regs_t>(g_registers.vals[idx], mask, s); }
+bool regsFlagsWriteMask(regs_t mask, bool s) { return regsWriteMask(REGS_IDX_FLAGS, mask, s); }
 
 // Help text for register names. Note that if you don't call regsGetRegisterName() then the linker will not include this in the program. 
 //
