@@ -3,26 +3,26 @@
 
 HX711MULTI::HX711MULTI(int count, byte *dout, byte pd_sck, byte gain) {
 	PD_SCK 	= pd_sck;
-	DOUT 	= dout; //TODO - make the input of dout to the function a const, or otherwise copy the values for local storage
 	COUNT   = count;
 
 	debugEnabled = false;
 
 	pinMode(PD_SCK, OUTPUT);
 	for (int i=0; i<count; i++) {
-		pinMode(DOUT[i], INPUT_PULLUP);
+		pinMode(DOUT[i], INPUT_PULLUP);		// Input pullup so that a disconnected chip will never flag as ready. 
 	}
 	set_gain(gain);
 
-	OFFSETS = (long *) malloc(COUNT*sizeof(long));
-
-	for (int i=0; i<COUNT; ++i) {
-		OFFSETS[i] = 0;
-	}
+	DOUT = new byte[COUNT];
+	memcpy(DOUT, dout, sizeof(DOUT[0])*COUNT);
+	
+	OFFSETS = new long[COUNT];
+	memset(OFFSETS, 0, sizeof(OFFSETS[0])*COUNT);
 }
 
 HX711MULTI::~HX711MULTI() {
-	free(OFFSETS);
+	delete OFFSETS;
+	delete DOUT;
 }
 
 bool HX711MULTI::is_ready() { 
@@ -117,9 +117,10 @@ bool HX711MULTI::tare(byte times, uint16_t tolerance) {
 
 //reads from all cahnnels and sets the values into the passed long array pointer (which must have at least 'count' cells allocated)
 //if you are only reading to toggle the line, and not to get values (such as in the case of setting gains) you can pass NULL.
-void HX711MULTI::read(long *result) {
+bool HX711MULTI::read(long *result) {
     
-    readRaw(result);
+    if (!readRaw(result))
+		return false;
     
     // Datasheet indicates the value is returned as a two's complement value, so 'stretch' the 24th bit to fit into 32 bits. 
 	if (NULL!=result) {
@@ -127,13 +128,15 @@ void HX711MULTI::read(long *result) {
 		    result[j] -= OFFSETS[j];   	
 		}
 	}
+	return true;
 }
 
 
-void HX711MULTI::readRaw(long *result) {
+bool HX711MULTI::readRaw(long *result) {
 	int i,j;
 	// wait for all the chips to become ready
-	while (!is_ready());
+	if (!is_ready())
+		return false;
 
 	// pulse the clock pin 24 times to read the data
 	for (i = 0; i < 24; ++i) {
@@ -163,6 +166,7 @@ void HX711MULTI::readRaw(long *result) {
 	    } 
 
     }
+	return true;
 }
 
 void HX711MULTI::setDebugEnable(bool debugEnable) {

@@ -42,11 +42,11 @@ class HX711MULTI
 		// depending on the parameter, the channel is also set to either A or B
 		void set_gain(byte gain = 128);
 
-		// waits for the chip to be ready and returns a reading
-		void read(long *result = NULL);
+		// If the chip is ready read it into the supplied array, apply the tare offsets and return true, else return false. 
+		bool read(long *result = NULL);
 
-		// same as read, but does not offset the values according to the tare
-		void readRaw(long *result = NULL);
+		// Same as read, but does not offset the values according to the tare
+		bool readRaw(long *result = NULL);
 
 		// set the OFFSET value for tare weight
 		// times: how many times to read the tare value
