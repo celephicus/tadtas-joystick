@@ -10,7 +10,7 @@ comms_layout = [
 		sg.Text('Port'), 
 		sg.Combo(values=[], key='-PORT-', size=(30, 1), disabled=True), # Note can be in one of readonly or disabled or enabled. 
 		sg.Button('Refresh Ports List', size=(7, 2), key='-REFRESH-'),
-		sg.Button('Connect', key='-CONNECT-'),
+		sg.Button('Connect', size=(9, 1), key='-CONNECT-'),
 		sg.Button('Clear Log', key='-CLEAR-LOG-'),
 	],
 	[ sg.Text('Log'), sg.Checkbox('Log raw data', key='CB-LOG-RAW-DATA'), ],
@@ -27,23 +27,23 @@ GUI_MAX = 1000.0
 
 js_layout = [ [
 	sg.Button('Zero', key='-ZERO-'), 
-	sg.Text('Scale'), 
-	#sg.Slider(range=(0,len(JS_SCALING)), orientation='h', size=(10, 5), enable_events=True, key='-SCALE-'),       
-	sg.Combo(values=JS_SCALING_TEXT, metadata=JS_SCALING_VALUES, readonly=True, size=(7, 1), default_value=JS_SCALING_TEXT[0], enable_events=True, key='-SCALE-'), 
 	sg.Text('Filter'), 
 	sg.Combo(values=list(map(str, range(5))), readonly=True, size=(7, 1), default_value='0', enable_events=True, key='-FILTER-'), 
 ] ] + [
 		[ 
 		sg.Text(z, size=(1, 1)), 
-		sg.ProgressBar(GUI_MAX, orientation='h', size=(45, 20), key='-{}-BARGRAPH-'.format(z)), 
-		sg.Text(size=(10, 1), background_color='white', text_color='black', key='-{}-VALUE-'.format(z)),
+		sg.Text('Scale', pad=(0,0), font='Helvetica 7'), 
+		sg.Combo(values=JS_SCALING_TEXT, metadata=JS_SCALING_VALUES, readonly=True, size=(7, 1), default_value=JS_SCALING_TEXT[0], enable_events=True, key=f'-{z}-SCALE-'), 
+		sg.ProgressBar(GUI_MAX, orientation='h', size=(35, 20), key=f'-{z}-BARGRAPH-'), 
+		sg.Text(size=(7, 1), background_color='white', text_color='black', key=f'-{z}-VALUE-'),
 	] for z in 'XYZ'
 ]
 
+graph_layout = [ [ sg.Graph(canvas_size=(300, 300), graph_bottom_left=(-GUI_MAX, -GUI_MAX), graph_top_right=(GUI_MAX, GUI_MAX), background_color='white', key='graph')] ]   
 layout = [
 	[ sg.Frame('Serial Port', comms_layout) ],
 	[ sg.Frame('Joystick', js_layout) ],
-	[ sg.Graph(canvas_size=(400, 400), graph_bottom_left=(-GUI_MAX, -GUI_MAX), graph_top_right=(GUI_MAX, GUI_MAX), background_color='white', key='graph')],      
+	[ sg.Column(graph_layout, vertical_alignment='center', justification='center'), ],
 ]
 	
 win = sg.Window('TADTas Zero Force Joystick Evaluator', layout, finalize=True)
@@ -54,7 +54,7 @@ def log(*args, **kwargs):
 
 def send_js_command(cmd):
 	if serial_port is not None:
-		log("Sent command `{}.'".format(cmd))
+		log(f"Sent command `{cmd}'.")
 		try: 
 			serial_port.write((cmd + '\r').encode('ascii'))
 		except serial.serialutil.SerialException: 
@@ -64,7 +64,7 @@ def send_js_command(cmd):
 def refresh_ports():
 	port_list = [(x.device, x.description) for x in sorted(serial.tools.list_ports.comports())]
 	port_descriptions = [p[1] for p in port_list]
-	log("Serial ports: {}".format(', '.join(port_descriptions)))
+	log(f"Serial ports: {', '.join(port_descriptions)}")
 	win['-PORT-'].update(values=port_descriptions, set_to_index=0)
 	win['-PORT-'].metadata = {p[1]: p[0] for p in port_list}
 	if len(port_list) < 1:
@@ -75,21 +75,21 @@ def refresh_ports():
 
 def refresh_connect_button():
 	win['-CONNECT-'].update(text="Connect" if serial_port is None else "Disconnect", disabled=not win['-PORT-'].metadata)
-
+'''
 def refresh_joystick_values():
 	win['-SCALE-'].update(disabled=not connected)
 	for z in 'XYZ':
 		win['-{}-BARGRAPH-'.format(z)].update(0)		# Just set curent to zero, if we are connected then it will get updated.
 		win['-{}-VALUE-'.format(z)].update(value='0')
-
+'''
 def do_action_filter(f):
-	send_js_command('{} 3 v!'.format(f))
+	send_js_command(f'{f} 3 v!')
 def do_zero_action():
 	send_js_command('js-z')
 
 ## Initialise.
 refresh_ports()
-refresh_joystick_values()
+# refresh_joystick_values()
 
 def close_serial_port():
 	global serial_port
@@ -106,39 +106,40 @@ def do_connect_action(port_description):
 			serial_port = serial.Serial(comport_device, baudrate=115200, timeout=0.01)
 		except serial.serialutil.SerialException:
 			close_serial_port()
-			log("Connect failed on {}.".format(comport_device))
+			log(f"Connect failed on {comport_device}.")
 		else:
-			log("Connect OK on {}.".format(comport_device))
+			log(f"Connect OK on {comport_device}.")
 			send_js_command('1 js-dump')
 			do_action_filter(win['-FILTER-'].get())
 			do_zero_action()
-			do_action_rescale()
+			for z in 'XYZ':
+				do_action_rescale(z)
 	else:
 		send_js_command('0 js-dump')		# Turn off dump.
-		log("Closed {}.".format(serial_port.port))
+		log(f"Closed {serial_port.port}.")
 		close_serial_port()
 	refresh_connect_button()
 
-def get_scale():
-	scale_descr = win['-SCALE-'].get()
-	return scale_descr, win['-SCALE-'].metadata[scale_descr]
+def get_scale(z):
+	scale_descr = win[f'-{z}-SCALE-'].get()
+	return scale_descr, win[f'-{z}-SCALE-'].metadata[scale_descr]
 	
 def do_update_values_action(vals):
-	scale_descr, scale = get_scale()
-	scaled_vals = [float(x) / scale for x in vals]
-	for i, v in enumerate(vals):
-		z = 'XYZ'[i]
-		win['-{}-BARGRAPH-'.format(z)].update(int((1.0 + scaled_vals[i]) * GUI_MAX / 2.0 + 0.5))		
-		win['-{}-VALUE-'.format(z)].update(value=str(v))
+	if len(vals) == 3:		# Three shalt be the number of the counting...
 	
-	CURSOR_CIRCLE,CURSOR_CROSSHAIR,CURSOR_LINEWIDTH = GUI_MAX/10,GUI_MAX/5, 2
-	win['graph'].erase()
-	X,Y = scaled_vals[0] * GUI_MAX, scaled_vals[1] * GUI_MAX
-	win['graph'].draw_circle((X,Y), CURSOR_CIRCLE, line_color='black', line_width=CURSOR_LINEWIDTH)
-	win['graph'].draw_line((X-CURSOR_CROSSHAIR,Y), (X+CURSOR_CROSSHAIR,Y), color='black', width=CURSOR_LINEWIDTH)
-	win['graph'].draw_line((X,Y-CURSOR_CROSSHAIR), (X,Y+CURSOR_CROSSHAIR), color='black', width=CURSOR_LINEWIDTH)
+		scaled_vals = [float(v) / get_scale(z)[1] for z, v in zip('XYZ', vals)]
+		
+		for z, v, vv in zip('XYZ', vals, scaled_vals):
+			win[f'-{z}-BARGRAPH-'].update(int((1.0 + vv) * GUI_MAX / 2.0 + 0.5))		
+			win[f'-{z}-VALUE-'].update(value=str(v))
+		
+		CURSOR_CIRCLE,CURSOR_CROSSHAIR,CURSOR_LINEWIDTH = GUI_MAX/10,GUI_MAX/5, 2
+		win['graph'].erase()
+		X,Y = scaled_vals[0] * GUI_MAX, scaled_vals[1] * GUI_MAX
+		win['graph'].draw_circle((X,Y), CURSOR_CIRCLE, line_color='black', line_width=CURSOR_LINEWIDTH)
+		win['graph'].draw_line((X-CURSOR_CROSSHAIR,Y), (X+CURSOR_CROSSHAIR,Y), color='black', width=CURSOR_LINEWIDTH)
+		win['graph'].draw_line((X,Y-CURSOR_CROSSHAIR), (X,Y+CURSOR_CROSSHAIR), color='black', width=CURSOR_LINEWIDTH)
 
-	
 raw_line = b''
 def do_read_joystick():
 	global raw_line
@@ -155,7 +156,7 @@ def do_read_joystick():
 					try: 
 						line = raw_line.decode('ascii').strip()
 					except ValueError: 
-						log("Could not decode `{}'.".format(raw_line))
+						log(f"Could not decode `{raw_line}'.")
 					else:
 						if win['CB-LOG-RAW-DATA'].get():
 							log(line)
@@ -167,9 +168,9 @@ def do_read_joystick():
 								do_update_values_action(list(map(int, vals[2:5])))
 					raw_line = b''
 
-def do_action_rescale():
-	scale_descr, scale = get_scale()
-	log(f"Fullscale set to \u00b1{scale:.3g} ({scale_descr}).")
+def do_action_rescale(z):
+	scale_descr, scale = get_scale(z)
+	log(f"Fullscale for axis {z} set to \u00b1{scale:.3g} ({scale_descr}).")
 							
 while True:
 	e, v = win.read(timeout=20)
@@ -189,7 +190,11 @@ while True:
 		do_zero_action()
 	elif e == '-FILTER-':
 		do_action_filter(v['-FILTER-'])
-	elif e == '-SCALE-':
-		do_action_rescale()
+	elif e == '-X-SCALE-':
+		do_action_rescale('X')
+	elif e == '-Y-SCALE-':
+		do_action_rescale('Y')
+	elif e == '-Z-SCALE-':
+		do_action_rescale('Z')
 		
 win.close()
