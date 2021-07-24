@@ -26,13 +26,13 @@ JS_SCALING_VALUES = dict(zip(JS_SCALING_TEXT, JS_SCALING))
 GUI_MAX = 1000.0
 
 js_layout = [ [
-	sg.Button('Zero', key='-ZERO-'), 
+	sg.Text('Sensitivity', size=(13,1), justification='right', font='Helvetica 7'), 
+	sg.Button('Zero', pad=((10,5),0), key='-ZERO-'), 
 	sg.Text('Filter'), 
 	sg.Combo(values=list(map(str, range(5))), readonly=True, size=(7, 1), default_value='0', enable_events=True, key='-FILTER-'), 
 ] ] + [
 		[ 
 		sg.Text(z, size=(1, 1)), 
-		sg.Text('Scale', pad=(0,0), font='Helvetica 7'), 
 		sg.Combo(values=JS_SCALING_TEXT, metadata=JS_SCALING_VALUES, readonly=True, size=(7, 1), default_value=JS_SCALING_TEXT[0], enable_events=True, key=f'-{z}-SCALE-'), 
 		sg.ProgressBar(GUI_MAX, orientation='h', size=(35, 20), key=f'-{z}-BARGRAPH-'), 
 		sg.Text(size=(7, 1), background_color='white', text_color='black', key=f'-{z}-VALUE-'),
