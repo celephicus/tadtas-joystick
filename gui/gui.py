@@ -33,7 +33,8 @@ js_layout = [ [
 ] ] + [
 		[ 
 		sg.Text(z, size=(1, 1)), 
-		sg.Combo(values=JS_SCALING_TEXT, metadata=JS_SCALING_VALUES, readonly=True, size=(7, 1), default_value=JS_SCALING_TEXT[0], enable_events=True, key=f'-{z}-SCALE-'), 
+		sg.Combo(values=JS_SCALING_TEXT, default_value=JS_SCALING_TEXT[len(JS_SCALING_TEXT)//2], metadata=JS_SCALING_VALUES, readonly=True, size=(7, 1), 
+		  enable_events=True, key=f'-{z}-SCALE-'), 
 		sg.ProgressBar(GUI_MAX, orientation='h', size=(35, 20), key=f'-{z}-BARGRAPH-'), 
 		sg.Text(size=(7, 1), background_color='white', text_color='black', key=f'-{z}-VALUE-'),
 	] for z in 'XYZ'
@@ -62,7 +63,7 @@ def send_js_command(cmd):
 	
 # List of ports held in combo box element. 
 def refresh_ports():
-	port_list = [(x.device, x.description) for x in sorted(serial.tools.list_ports.comports())]
+	port_list = [(x.device, x.description) for x in sorted(serial.tools.list_ports.comports()) if "arduino micro" not in x.description.lower()]
 	port_descriptions = [p[1] for p in port_list]
 	log(f"Serial ports: {', '.join(port_descriptions)}")
 	win['-PORT-'].update(values=port_descriptions, set_to_index=0)
