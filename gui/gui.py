@@ -12,9 +12,11 @@ comms_layout = [
 		sg.Button('Refresh Ports List', size=(7, 2), key='-REFRESH-'),
 		sg.Button('Connect', size=(9, 1), key='-CONNECT-'),
 		sg.Button('Clear Log', key='-CLEAR-LOG-'),
-	],
-	[ sg.Text('Log'), sg.Checkbox('Log raw data', key='CB-LOG-RAW-DATA'), ],
-	[ sg.Multiline('', key='-LOG-', size=(None, 5), autoscroll=True, auto_refresh=True, write_only=True) ],
+                sg.Checkbox('Log raw data', key='CB-LOG-RAW-DATA'), 
+        ],
+	[
+                sg.Multiline('', key='-LOG-', size=(None, 3), autoscroll=True, auto_refresh=True, write_only=True)
+        ],
 ]
 
 # Scaling for joystick vales which are 24 bit signed so approx +/-8.34e6 fullscale.
@@ -31,13 +33,13 @@ js_layout = [ [
 	sg.Text('Filter'), 
 	sg.Combo(values=list(map(str, range(5))), readonly=True, size=(7, 1), default_value='0', enable_events=True, key='-FILTER-'), 
 ] ] + [
-		[ 
+	[ 
 		sg.Text(z, size=(1, 1)), 
 		sg.Combo(values=JS_SCALING_TEXT, default_value=JS_SCALING_TEXT[len(JS_SCALING_TEXT)//2], metadata=JS_SCALING_VALUES, readonly=True, size=(7, 1), 
 		  enable_events=True, key=f'-{z}-SCALE-'), 
-		sg.ProgressBar(GUI_MAX, orientation='h', size=(35, 20), key=f'-{z}-BARGRAPH-'), 
+		sg.ProgressBar(GUI_MAX, orientation='h', size=(35, 20), bar_color=col, key=f'-{z}-BARGRAPH-'), 
 		sg.Text(size=(7, 1), background_color='white', text_color='black', key=f'-{z}-VALUE-'),
-	] for z in 'XYZ'
+	] for z, col in zip('XYZ', (('red', 'IndianRed1'), ('green', 'lightgreen'), ('black', 'grey')))
 ]
 
 graph_layout = [ [ sg.Graph(canvas_size=(300, 300), graph_bottom_left=(-GUI_MAX, -GUI_MAX), graph_top_right=(GUI_MAX, GUI_MAX), background_color='white', key='graph')] ]   
@@ -63,7 +65,7 @@ def send_js_command(cmd):
 	
 # List of ports held in combo box element. 
 def refresh_ports():
-	port_list = [(x.device, x.description) for x in sorted(serial.tools.list_ports.comports()) if "arduino micro" not in x.description.lower()]
+	port_list = [(x.device, x.description) for x in sorted(serial.tools.list_ports.comports()) if 0x2341 != x.vid]
 	port_descriptions = [p[1] for p in port_list]
 	log(f"Serial ports: {', '.join(port_descriptions)}")
 	win['-PORT-'].update(values=port_descriptions, set_to_index=0)
