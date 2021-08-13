@@ -134,6 +134,7 @@ const char* regsGetHelpStr() {
 
 bool regsHexFormat(uint8_t reg_idx) { return !!(_BV(reg_idx) & REGS_PRINT_HEX_MASK); }
 
+// If regs_t is compatible with the console cell type then we can use the console to print the regs values.
 #if CFG_WANT_CONSOLE_PRINT_FOR_REGS
 #include <FConsole.h>
 void regsPrintRegValue(uint8_t idx) { 
