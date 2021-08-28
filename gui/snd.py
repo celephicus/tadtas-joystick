@@ -5,9 +5,10 @@ import numpy as np
 import sounddevice as sd
 
 start_idx = 0
-f1, f2 = 500, 500
+f1, f2 = 261.5, 261.5*2
+finc = 
 amplitude = 0.4
-device = None
+device = None	# Seems to use speaker as a default. 
 
 samplerate = sd.query_devices(device, 'output')['default_samplerate']
 

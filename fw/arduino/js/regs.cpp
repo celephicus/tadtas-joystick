@@ -136,7 +136,7 @@ bool regsHexFormat(uint8_t reg_idx) { return !!(_BV(reg_idx) & REGS_PRINT_HEX_MA
 
 // If regs_t is compatible with the console cell type then we can use the console to print the regs values.
 #if CFG_WANT_CONSOLE_PRINT_FOR_REGS
-#include <FConsole.h>
+#include "FConsole.h"
 void regsPrintRegValue(uint8_t idx) { 
 	if (regsHexFormat(idx)) 
 		consolePrint(CONSOLE_PRINT_HEX, (console_cell_t)REGS[idx]);
