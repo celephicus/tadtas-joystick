@@ -174,6 +174,34 @@ def do_read_joystick():
 def do_action_rescale(z):
 	scale_descr, scale = get_scale(z)
 	log(f"Fullscale for axis {z} set to \u00b1{scale:.3g} ({scale_descr}).")
+
+# Sound stuff.
+
+import numpy as np
+import sounddevice as sd
+
+start_idx = 0
+f1, f2 = 261.5, 261.5*2
+amplitude = 0.4
+
+DEVICE = None	# Seems to use speaker as a default. 
+SAMPLERATE = sd.query_devices(DEVICE, 'output')['default_samplerate']
+
+def mk_samples(t, f):
+	a = amplitude if f != 500 else 0.0
+	return a * np.sin(2 * np.pi * f * t)
+	
+def callback(outdata, frames, time, status):
+	if status:
+		print(status, file=sys.stderr)
+	global start_idx
+	t = (start_idx + np.arange(frames)) / SAMPLERATE
+	t = t.reshape(-1, 1)
+	outdata[:] = list(zip(mk_samples(t, f1), mk_samples(t, f2)))
+	start_idx += frames
+
+stros = sd.OutputStream(device=DEVICE, channels=2, callback=callback, samplerate=SAMPLERATE)
+stros.start()
 							
 while True:
 	e, v = win.read(timeout=20)
