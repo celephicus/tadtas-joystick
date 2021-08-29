@@ -3,7 +3,6 @@ import serial, serial.tools.list_ports
 import sys, math
 
 serial_port = None
-connected = True
 
 comms_layout = [
 	[ 
@@ -78,21 +77,11 @@ def refresh_ports():
 
 def refresh_connect_button():
 	win['-CONNECT-'].update(text="Connect" if serial_port is None else "Disconnect", disabled=not win['-PORT-'].metadata)
-'''
-def refresh_joystick_values():
-	win['-SCALE-'].update(disabled=not connected)
-	for z in 'XYZ':
-		win['-{}-BARGRAPH-'.format(z)].update(0)		# Just set curent to zero, if we are connected then it will get updated.
-		win['-{}-VALUE-'.format(z)].update(value='0')
-'''
+
 def do_action_filter(f):
 	send_js_command(f'{f} 3 v!')
 def do_zero_action():
 	send_js_command('js-z')
-
-## Initialise.
-refresh_ports()
-# refresh_joystick_values()
 
 def close_serial_port():
 	global serial_port
@@ -101,6 +90,12 @@ def close_serial_port():
 		except serial.serialutil.SerialException: pass
 		serial_port = None
 
+# Globals to set pitches on L,R channels. 
+s_f = [0, 0]
+def mute():
+	global s_f
+	s_f = [0, 0]
+	
 def do_connect_action(port_description):
 	global serial_port
 	if serial_port is None:
@@ -121,27 +116,42 @@ def do_connect_action(port_description):
 		send_js_command('0 js-dump')		# Turn off dump.
 		log(f"Closed {serial_port.port}.")
 		close_serial_port()
+		mute()
 	refresh_connect_button()
 
 def get_scale(z):
 	scale_descr = win[f'-{z}-SCALE-'].get()
 	return scale_descr, win[f'-{z}-SCALE-'].metadata[scale_descr]
-	
+
+S_F = 261.5, 261.5*math.sqrt(2)	# Middle pitch, we've chosen middle "C".
+S_S = 1.00000, 1.12242, 1.25991, 1.33482, 1.49830, #1.68176, 1.88770, 1.99996 # "C" major scale.
+
 def do_update_values_action(vals):
-	if len(vals) == 3:		# Three shalt be the number of the counting...
+	assert(len(vals) == 3)		# Three shalt be the number of the counting...
+
+	# Scale raw values according to scaling setting on GUI.
+	scaled_vals = [float(v) / get_scale(z)[1] for z, v in zip('XYZ', vals)]
 	
-		scaled_vals = [float(v) / get_scale(z)[1] for z, v in zip('XYZ', vals)]
-		
-		for z, v, vv in zip('XYZ', vals, scaled_vals):
-			win[f'-{z}-BARGRAPH-'].update(int((1.0 + vv) * GUI_MAX / 2.0 + 0.5))		
-			win[f'-{z}-VALUE-'].update(value=str(v))
-		
-		CURSOR_CIRCLE,CURSOR_CROSSHAIR,CURSOR_LINEWIDTH = GUI_MAX/10,GUI_MAX/5, 2
-		win['graph'].erase()
-		X,Y = scaled_vals[0] * GUI_MAX, scaled_vals[1] * GUI_MAX
-		win['graph'].draw_circle((X,Y), CURSOR_CIRCLE, line_color='black', line_width=CURSOR_LINEWIDTH)
-		win['graph'].draw_line((X-CURSOR_CROSSHAIR,Y), (X+CURSOR_CROSSHAIR,Y), color='black', width=CURSOR_LINEWIDTH)
-		win['graph'].draw_line((X,Y-CURSOR_CROSSHAIR), (X,Y+CURSOR_CROSSHAIR), color='black', width=CURSOR_LINEWIDTH)
+	# Update each axis bargraph & value element. 
+	for z, v, vv in zip('XYZ', vals, scaled_vals):
+		win[f'-{z}-BARGRAPH-'].update(int((1.0 + vv) * GUI_MAX / 2.0 + 0.5))		
+		win[f'-{z}-VALUE-'].update(value=str(v))
+	
+	# Update XY plot.
+	CURSOR_CIRCLE,CURSOR_CROSSHAIR,CURSOR_LINEWIDTH = GUI_MAX/10,GUI_MAX/5, 2
+	win['graph'].erase()
+	X,Y = scaled_vals[0] * GUI_MAX, scaled_vals[1] * GUI_MAX
+	win['graph'].draw_circle((X,Y), CURSOR_CIRCLE, line_color='black', line_width=CURSOR_LINEWIDTH)
+	win['graph'].draw_line((X-CURSOR_CROSSHAIR,Y), (X+CURSOR_CROSSHAIR,Y), color='black', width=CURSOR_LINEWIDTH)
+	win['graph'].draw_line((X,Y-CURSOR_CROSSHAIR), (X,Y+CURSOR_CROSSHAIR), color='black', width=CURSOR_LINEWIDTH)
+
+	# Update sounds.
+	global s_f
+	M = len(S_S)-1
+	ff = [max(min(int(vv*len(S_S)+.5), M), -M) for vv in scaled_vals[0:2]]
+	log(f"Sound: {ff}.")
+	for i in range(2):
+		s_f[i] = (S_F[i] * S_S[ff[i]]) if (ff[i] >= 0) else (S_F[i] / S_S[ff[-i]])
 
 raw_line = b''
 def do_read_joystick():
@@ -180,27 +190,29 @@ def do_action_rescale(z):
 import numpy as np
 import sounddevice as sd
 
-start_idx = 0
-f1, f2 = 261.5, 261.5*2
-amplitude = 0.4
+AMPLITUDE = 0.4
 
 DEVICE = None	# Seems to use speaker as a default. 
 SAMPLERATE = sd.query_devices(DEVICE, 'output')['default_samplerate']
 
 def mk_samples(t, f):
-	a = amplitude if f != 500 else 0.0
-	return a * np.sin(2 * np.pi * f * t)
+	return AMPLITUDE * np.sin(2 * np.pi * f * t)
 	
-def callback(outdata, frames, time, status):
+start_idx = 0
+s_ff = [0, 0]
+def cb_sound(outdata, frames, time, status):
+	global start_idx
 	if status:
 		print(status, file=sys.stderr)
-	global start_idx
 	t = (start_idx + np.arange(frames)) / SAMPLERATE
 	t = t.reshape(-1, 1)
-	outdata[:] = list(zip(mk_samples(t, f1), mk_samples(t, f2)))
+	outdata[:] = list(zip(mk_samples(t, s_f[0]), mk_samples(t, s_f[1])))
 	start_idx += frames
 
-stros = sd.OutputStream(device=DEVICE, channels=2, callback=callback, samplerate=SAMPLERATE)
+## Initialise.
+refresh_ports()
+
+stros = sd.OutputStream(device=DEVICE, channels=2, callback=cb_sound, samplerate=SAMPLERATE)
 stros.start()
 							
 while True:
