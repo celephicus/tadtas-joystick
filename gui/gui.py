@@ -11,7 +11,7 @@ comms_layout = [
 		sg.Button('Refresh Ports List', size=(7, 2), key='-REFRESH-'),
 		sg.Button('Connect', size=(9, 1), key='-CONNECT-'),
 		sg.Button('Clear Log', key='-CLEAR-LOG-'),
-                sg.Checkbox('Log raw data', key='CB-LOG-RAW-DATA'), 
+        sg.Checkbox('Log raw data', key='CB-LOG-RAW-DATA'), 
         ],
 	[
                 sg.Multiline('', key='-LOG-', size=(None, 3), autoscroll=True, auto_refresh=True, write_only=True)
@@ -29,13 +29,13 @@ GUI_MAX = 1000.0
 js_layout = [ [
 	sg.Text('Sensitivity', size=(13,1), justification='right', font='Helvetica 7'), 
 	sg.Button('Zero', pad=((10,5),0), key='-ZERO-'), 
-	sg.Text('Filter'), 
-	sg.Combo(values=list(map(str, range(5))), readonly=True, size=(7, 1), default_value='0', enable_events=True, key='-FILTER-'), 
+	sg.Text('Filter'), sg.Combo(values=list(map(str, range(5))), readonly=True, size=(4, 1), default_value='0', enable_events=True, key='-FILTER-'), 
 ] ] + [
 	[ 
 		sg.Text(z, size=(1, 1)), 
 		sg.Combo(values=JS_SCALING_TEXT, default_value=JS_SCALING_TEXT[len(JS_SCALING_TEXT)//2], metadata=JS_SCALING_VALUES, readonly=True, size=(7, 1), 
 		  enable_events=True, key=f'-{z}-SCALE-'), 
+        sg.Checkbox('Sound', key=f'-{z}-SOUND-', disabled=z not in 'XY'), 
 		sg.ProgressBar(GUI_MAX, orientation='h', size=(35, 20), bar_color=col, key=f'-{z}-BARGRAPH-'), 
 		sg.Text(size=(7, 1), background_color='white', text_color='black', key=f'-{z}-VALUE-'),
 	] for z, col in zip('XYZ', (('red', 'IndianRed1'), ('green', 'lightgreen'), ('black', 'grey')))
@@ -123,8 +123,10 @@ def get_scale(z):
 	scale_descr = win[f'-{z}-SCALE-'].get()
 	return scale_descr, win[f'-{z}-SCALE-'].metadata[scale_descr]
 
-S_F = 261.5, 261.5*math.sqrt(2)	# Middle pitch, we've chosen middle "C".
-S_S = 1.00000, 1.12242, 1.25991, 1.33482, 1.49830, #1.68176, 1.88770, 1.99996 # "C" major scale.
+S_F = 261.5, 261.5*math.sqrt(2)	# Middle pitch, we've chosen middle C & G above.
+# 1.00000, 1.12242, 1.25991, 1.33482, 1.49830, 1.68176, 1.88770, 1.99996 "C" major scale.
+S_S = 1.12242, 1.25991, 1.33482, 1.49830, 1.68176, 
+SOUND_DEADBAND = .02 # If within this band around zero then no sound.
 
 def do_update_values_action(vals):
 	assert(len(vals) == 3)		# Three shalt be the number of the counting...
@@ -148,10 +150,17 @@ def do_update_values_action(vals):
 	# Update sounds.
 	global s_f
 	M = len(S_S)-1
-	ff = [max(min(int(vv*len(S_S)+.5), M), -M) for vv in scaled_vals[0:2]]
-	log(f"Sound: {ff}.")
+	ff = [0, 0]
 	for i in range(2):
-		s_f[i] = (S_F[i] * S_S[ff[i]]) if (ff[i] >= 0) else (S_F[i] / S_S[ff[-i]])
+		if abs(scaled_vals[i]) >= SOUND_DEADBAND and win['-%s-SOUND-'%('XY'[i])].get():	# If out of detent...
+			rf = math.copysign((abs(scaled_vals[i]) - SOUND_DEADBAND) / (1 - SOUND_DEADBAND), scaled_vals[i]) # Range 0.0..1.0
+			sign = scaled_vals[i] >= 0
+			ff[i] = max(min(int(rf*(M+1)), M), -M)
+			s_f[i] = S_F[i] * (S_S[ff[i]] if sign else 1.0 / S_S[-ff[i]])
+		else:			
+			s_f[i] = 0
+			ff[i] = None
+	# log(f"Sound: {ff}.")
 
 raw_line = b''
 def do_read_joystick():
