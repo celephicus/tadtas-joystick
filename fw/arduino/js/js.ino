@@ -1,5 +1,7 @@
 #include <Arduino.h>
+#ifdef CFG_WANT_MOUSE
 #include "Mouse.h"
+#endif
 
 #include "project_config.h"
 #include "debug.h"
@@ -87,7 +89,9 @@ void setup() {
 	regsInit();
 	console_init();
 	driverInit();
+#ifdef CFG_WANT_MOUSE
 	Mouse.begin();
+#endif
 }
 
 static void do_dump_regs() {
@@ -113,8 +117,10 @@ static void service_hx711() {
 			driverPrintHx711Data(hx711_readings);
 			consolePrint(CONSOLE_PRINT_NEWLINE, 0);
 		}
- 	
-		if (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_MOUSE_EMULATION) {
+ 	}
+
+#ifdef CFG_WANT_MOUSE
+	if (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_MOUSE_EMULATION) {
 			int8_t delta[2] = {0, 0};
 			fori (2) {
 				if ((hx711_readings[i] > +REGS[REGS_IDX_MOUSE_XY_DEADBAND]) || (hx711_readings[i] < -REGS[REGS_IDX_MOUSE_XY_DEADBAND]))
@@ -124,6 +130,8 @@ static void service_hx711() {
 				Mouse.move(delta[0], delta[1]);
 		}
 	}
+#endif
+
 }
 
 void loop() {

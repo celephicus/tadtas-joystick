@@ -11,45 +11,68 @@ FILENUM(3);
 #include "regs.h"
 #include "console.h"
 
-// HX711 driver
+// Generic joystick driver
 //
-static const uint8_t f_hx711_data_pins[COUNT_GPIO_HX711] = { GPIO_PIN_HX711_DT_X, GPIO_PIN_HX711_DT_Y, GPIO_PIN_HX711_DT_Z };
-static HX711MULTI f_hx711(COUNT_GPIO_HX711, (byte*)f_hx711_data_pins, GPIO_PIN_HX711_CLK);
 
 // Simple filter.
 typedef int32_t filter_accum_t;
 int32_t filter(filter_accum_t* accum, int32_t input, uint8_t k, bool reset=false) {
-#if 1	
-	*accum = reset ? ((filter_accum_t)input << k) : (*accum - (*accum >> k) + (filter_accum_t)input); 
+	#if 1
+	*accum = reset ? ((filter_accum_t)input << k) : (*accum - (*accum >> k) + (filter_accum_t)input);
 	return (int32_t)(*accum >> k);		// Is right shift on signed arithmetic or logical?
-#else
+	#else
 	const int32_t mult = 1L << k;
-	*accum = reset ? ((filter_accum_t)input * mult) : (*accum - (*accum / mult) + (filter_accum_t)input); 
-	return (int32_t)(*accum / mult);		
-#endif
+	*accum = reset ? ((filter_accum_t)input * mult) : (*accum - (*accum / mult) + (filter_accum_t)input);
+	return (int32_t)(*accum / mult);
+	#endif
 }
 
-// Holds state of single HX711. 
+// Holds state of single axis.
 typedef struct {
 	int32_t raw;
 	int32_t filtered;
 	int32_t offset;
 	filter_accum_t accum;
 } hx711_t;
-
 static hx711_t f_hx711_data[COUNT_GPIO_HX711];
 
-static void init_hx711() {
-	memset(f_hx711_data, 0, sizeof(f_hx711));
+// Timer for emulation.
+static uint16_t f_js_timer;
+const uint16_t JS_EMU_PERIOD_MS = 90;
+
+static const uint8_t f_hx711_data_pins[COUNT_GPIO_HX711] = { GPIO_PIN_HX711_DT_X, GPIO_PIN_HX711_DT_Y, GPIO_PIN_HX711_DT_Z };
+static HX711MULTI f_hx711(COUNT_GPIO_HX711, (byte*)f_hx711_data_pins, GPIO_PIN_HX711_CLK);
+
+// For emulation we have a simple abstract interface with a single operation which supplies data at 11Hz rate.
+bool read_raw(int32_t* data) {	
+	if (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_JOYSTICK_EMULATION) {
+		if (utilsIsTimerDone(f_js_timer, JS_EMU_PERIOD_MS)) {
+			utilsStartTimer(f_js_timer);
+			fori(COUNT_GPIO_HX711)
+				data[i] = analogRead(A0 + i);
+			return true;
+		}
+	}
+	else {
+		if (f_hx711.is_ready()) {
+			(void)f_hx711.readRaw((long*)data);		// Can't fail, we just checked.
+			return true;
+		}
+	}
+	return false;
 }
 
+static void init_hx711() {
+	fori(COUNT_GPIO_HX711) {
+		f_hx711_data[i].raw	= f_hx711_data[i].filtered = 0;		
+		f_hx711_data[i].offset = (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_JOYSTICK_EMULATION) ? 512 : 0;
+	}
+}
 
 static void service_hx711() {
-	if (f_hx711.is_ready()) {
-		static uint8_t filter_k = 0xff;
-		int32_t raw[COUNT_GPIO_HX711];		// Get raw readings.
-		(void)f_hx711.readRaw((long*)raw);		// Can't fail, we just checked.
-		
+	static uint8_t filter_k = 0xff;		// Force filter reset on startup.
+	int32_t raw[COUNT_GPIO_HX711];		// Get raw readings.
+	if (read_raw(raw)) {
 		// When we change the filter rate we must reset it to avoid big bumps.
 		bool filter_reset = false;
 		if (REGS[REGS_IDX_HX711_FILTER_K] != filter_k) {
@@ -80,8 +103,8 @@ bool driverGetHx711Data(int32_t* data) {
 }
 
 void driverZeroHx711() {
-		fori(COUNT_GPIO_HX711) 
-			f_hx711_data[i].offset = f_hx711_data[i].filtered;
+	fori(COUNT_GPIO_HX711) 
+		f_hx711_data[i].offset = f_hx711_data[i].filtered;
 }
 
 

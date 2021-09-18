@@ -23,7 +23,7 @@ void regsExtraSetDefaults(); // Defined in regs.local.cpp
 // Registers are defined with 3 parameters, name, default value, and a short comment that is turned into help text. 
 #define REGS_DEFS(gen_)																														\
  gen_(FLAGS,						REGS_NO_DEFAULT,					"Various flags, see REGS_FLAGS_MASK_xxx")							\
- gen_(RESTART,						REGS_NO_DEFAULT,					"Snapshot of MCUSR")												\
+ gen_(RESTART,						REGS_NO_DEFAULT,					"lo 8: MCUSR, hi 8: WDT mask")										\
 																																			\
  /* NV regs. */																																\
  gen_(ENABLES,						0,									"Enable flags")														\
@@ -49,13 +49,14 @@ void regsExtraSetDefaults(); // Defined in regs.local.cpp
 
 // Enables are defined with 3 parameters, name, bit position and a short description that is turned into help text. 
 #define REGS_ENABLES_DEFS(gen_)																							\
- gen_(DUMP_REGS,		0,	"Regs values dump to console")																\
- gen_(DUMP_REGS_FAST,	1,	"Dump at 5/s rather than 1/s")																\
- gen_(DUMP_HX711,		2,	"Dump HX711 readings")																		\
- gen_(MOUSE_EMULATION,	3,	"Enable mouse emulation")																	\
- gen_(AXIS_INVERT_X,	4,	"Invert x axis")																			\
- gen_(AXIS_INVERT_Y,	5,	"Invert y axis")																			\
- gen_(AXIS_INVERT_Z,	6,	"Invert z axis")																			\
+ gen_(DUMP_REGS,			0,	"Regs values dump to console")															\
+ gen_(DUMP_REGS_FAST,		1,	"Dump at 5/s rather than 1/s")															\
+ gen_(DUMP_HX711,			2,	"Dump HX711 readings")																	\
+ gen_(MOUSE_EMULATION,		3,	"Enable mouse emulation")																\
+ gen_(AXIS_INVERT_X,		4,	"Invert x axis")																		\
+ gen_(AXIS_INVERT_Y,		5,	"Invert y axis")																		\
+ gen_(AXIS_INVERT_Z,		6,	"Invert z axis")																		\
+ gen_(JOYSTICK_EMULATION,	7,	"Emulate joystick")																		\
 
 // Generate FLAGS defs.
 //

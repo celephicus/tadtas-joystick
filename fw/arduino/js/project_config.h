@@ -20,5 +20,8 @@
 #define CFG_WANT_CONSOLE_ECHO 1
 #define CFG_CONSOLE_INPUT_ACCEPT_BUFFER_SIZE (32)
 
+// Mouse emulation?
+// #define CFG_WANT_MOUSE
+
 #endif  // PROJECT_CONFIG_H__
 
