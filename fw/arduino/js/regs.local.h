@@ -24,6 +24,8 @@ void regsExtraSetDefaults(); // Defined in regs.local.cpp
 #define REGS_DEFS(gen_)																														\
  gen_(FLAGS,						REGS_NO_DEFAULT,					"Various flags, see REGS_FLAGS_MASK_xxx")							\
  gen_(RESTART,						REGS_NO_DEFAULT,					"lo 8: MCUSR, hi 8: WDT mask")										\
+ gen_(JS_EMU_X,						REGS_NO_DEFAULT,					"x axis joystick emulation")										\
+ gen_(JS_EMU_Y,						REGS_NO_DEFAULT,					"y axis joystick emulation")										\
 																																			\
  /* NV regs. */																																\
  gen_(ENABLES,						0,									"Enable flags")														\
@@ -41,6 +43,11 @@ void regsExtraSetDefaults(); // Defined in regs.local.cpp
 #define REGS_FLAGS_DEFS(gen_)																							\
  /* Signal flags. */																									\
  gen_(HX711_UPDATE,					0,  "HX711 data available")															\
+ gen_(RELAY_0,						1,  "relay 0")																		\
+ gen_(RELAY_1,						2,  "relay 1")																		\
+ gen_(RELAY_2,						3,  "relay 2")																		\
+ gen_(RELAY_3,						4,  "relay 3")																		\
+																														\
  /* Debug flags. */																										\
 																														\
  /* Fault flags, assigned down from bit 15. */																			\

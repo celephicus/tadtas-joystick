@@ -141,9 +141,13 @@ T utilsAbs(T x)  {
 #define utilsAbsI16 utilsAbs<int16_t>
 #define utilsAbsI32 utilsAbs<int32_t>
 
-// Set/clear all bits in the mask in the value. Usually the mask will have a single set bit. Return true if value has changed. 
+// Set/clear all bits in the mask in the value. Return true if value has changed. 
 template <typename T>
 bool utilsWriteBitmask(T& val, T mask, bool s) { const T old_val = val; if (s) val |=  mask; else val &= ~mask; return (old_val != val); }
+
+// Write all bits in a mask to a second mask. Usually the mask will have a single set bit. Return true if value has changed. 
+template <typename T>
+bool utilsUpdateBitmask(T& val, T mask, T m) { const T old_val = val; val = (val & ~mask) | (m & mask); return (old_val != val); }
 
 // Integer division spreading error.
 template <typename T>
