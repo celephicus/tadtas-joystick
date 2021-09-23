@@ -29,7 +29,8 @@ GUI_MAX = 1000.0
 js_layout = [ [
 	sg.Text('Sensitivity', size=(13,1), justification='right', font='Helvetica 7'), 
 	sg.Button('Zero', pad=((10,5),0), key='-ZERO-'), 
-	sg.Text('Filter'), sg.Combo(values=list(map(str, range(5))), readonly=True, size=(4, 1), default_value='0', enable_events=True, key='-FILTER-'), 
+	sg.Text('Filter'), sg.Combo(values=[str(x) for x in range(5)], readonly=True, size=(4, 1), default_value='0', enable_events=True, key='-FILTER-'), 
+	sg.Text('Relay %FS'),  sg.Combo(values=[str(x) for x in range(5, 105, 5)], readonly=True, size=(4, 1), default_value='50', enable_events=True, key='-RELAY-'), # Range 5%..100%
 ] ] + [
 	[ 
 		sg.Text(z, size=(1, 1)), 
@@ -41,7 +42,7 @@ js_layout = [ [
 	] for z, col in zip('XYZ', (('red', 'IndianRed1'), ('green', 'lightgreen'), ('black', 'grey')))
 ]
 
-graph_layout = [ [ sg.Graph(canvas_size=(300, 300), graph_bottom_left=(-GUI_MAX, -GUI_MAX), graph_top_right=(GUI_MAX, GUI_MAX), background_color='white', key='graph')] ]   
+graph_layout = [ [ sg.Graph(canvas_size=(300, 300), graph_bottom_left=(-GUI_MAX, -GUI_MAX), graph_top_right=(GUI_MAX, GUI_MAX), background_color='white', enable_events=False, key='graph')] ]   
 layout = [
 	[ sg.Frame('Serial Port', comms_layout) ],
 	[ sg.Frame('Joystick', js_layout) ],
@@ -107,13 +108,15 @@ def do_connect_action(port_description):
 			log(f"Connect failed on {comport_device}.")
 		else:
 			log(f"Connect OK on {comport_device}.")
-			send_js_command('1 js-dump')
+			send_js_command('0 relay')			# Turn off relays. 
+			send_js_command('1 js-dump')		# Turn on JS value dump. 
 			do_action_filter(win['-FILTER-'].get())
 			do_zero_action()
 			for z in 'XYZ':
 				do_action_rescale(z)
 	else:
 		send_js_command('0 js-dump')		# Turn off dump.
+		send_js_command('0 relay')			# Turn off relays. 
 		log(f"Closed {serial_port.port}.")
 		close_serial_port()
 		mute()
@@ -127,7 +130,7 @@ S_F = 261.5, 261.5*math.sqrt(2)	# Middle pitch, we've chosen middle C & G above.
 # 1.00000, 1.12242, 1.25991, 1.33482, 1.49830, 1.68176, 1.88770, 1.99996 "C" major scale.
 S_S = 1.12242, 1.25991, 1.33482, 1.49830, 1.68176, 
 SOUND_DEADBAND = .02 # If within this band around zero then no sound.
-
+old_relay_val = -1
 def do_update_values_action(vals):
 	assert(len(vals) == 3)		# Three shalt be the number of the counting...
 
@@ -162,6 +165,22 @@ def do_update_values_action(vals):
 			ff[i] = None
 	# log(f"Sound: {ff}.")
 
+	# Update relays
+	relay_threshold = float(win['-RELAY-'].get()) / 100.0
+	relay_val = 0
+	if scaled_vals[0] > +relay_threshold:
+		relay_val = 1
+	elif scaled_vals[0] < -relay_threshold:
+		relay_val = 2
+	if scaled_vals[1] > +relay_threshold:
+		relay_val |= 4
+	if scaled_vals[1] < -relay_threshold:
+		relay_val |= 8
+	global old_relay_val
+	if old_relay_val != relay_val:
+		send_js_command(f'{relay_val} relay')
+		old_relay_val = relay_val
+		
 raw_line = b''
 def do_read_joystick():
 	global raw_line
