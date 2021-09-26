@@ -39,6 +39,8 @@ static bool console_cmds_user(char* cmd) {
 		case /** # **/ 0XB586: console_raise(CONSOLE_RC_STATUS_IGNORE_TO_EOL); break;
 		case /** LED **/ 0XDC88: gpioDebugLedWrite(!console_u_pop()); break;
 		case /** LED1 **/ 0X6DB9: gpioDebugLed1Write(!console_u_pop()); break;
+		case /** .S **/ 0X66B8: { uint8_t i = console_u_depth(); while (i > 0) consolePrint(CONSOLE_PRINT_SIGNED, console_u_pick(--i)); } break; 
+
 		REGS_CONSOLE_COMMANDS_NV
 		REGS_CONSOLE_COMMANDS_ACCESS
 		REGS_CONSOLE_COMMANDS_PRINT
@@ -110,11 +112,11 @@ static void do_dump_regs() {
 }
 
 static void service_hx711() {
-	int32_t hx711_readings[COUNT_GPIO_HX711];
-	if (driverGetHx711Data(hx711_readings)) {
-		if (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_DUMP_HX711) {
-			GPIO_SERIAL_CONSOLE.print(F("HX711: ")); GPIO_SERIAL_CONSOLE.print(millis()); GPIO_SERIAL_CONSOLE.print(F(" ")); 
-			driverPrintHx711Data(hx711_readings);
+	int32_t hx711_readings[GPIO_JS_AXIS_COUNT];
+	if (driverGetJs1Data(hx711_readings)) {
+		if (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_DUMP_JS) {
+			GPIO_SERIAL_CONSOLE.print(F("JS: ")); GPIO_SERIAL_CONSOLE.print(millis()); GPIO_SERIAL_CONSOLE.print(F(" ")); 
+			driverPrintJsData(hx711_readings);
 			consolePrint(CONSOLE_PRINT_NEWLINE, 0);
 		}
  	}

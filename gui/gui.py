@@ -201,7 +201,7 @@ def do_read_joystick():
 					else:
 						if win['CB-LOG-RAW-DATA'].get():
 							log(line)
-						if line.startswith("HX711:"):
+						if line.startswith("JS:"):
 							vals = line.split()
 							if len(vals) != 5:
 								log("Invalid format.")

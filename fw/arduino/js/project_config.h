@@ -23,5 +23,10 @@
 // Mouse emulation?
 // #define CFG_WANT_MOUSE
 
+// Use emulated strain gauge joystick?
+#ifndef CFG_WANT_JS_EMULATION
+#define CFG_WANT_JS_EMULATION 0
+#endif
+
 #endif  // PROJECT_CONFIG_H__
 

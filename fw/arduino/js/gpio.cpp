@@ -1,5 +1,6 @@
 #include <Arduino.h>
 
+#include "project_config.h"
 #include "gpio.h"
 #include "utils.h"
 

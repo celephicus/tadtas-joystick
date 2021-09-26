@@ -24,12 +24,10 @@ void regsExtraSetDefaults(); // Defined in regs.local.cpp
 #define REGS_DEFS(gen_)																														\
  gen_(FLAGS,						REGS_NO_DEFAULT,					"Various flags, see REGS_FLAGS_MASK_xxx")							\
  gen_(RESTART,						REGS_NO_DEFAULT,					"lo 8: MCUSR, hi 8: WDT mask")										\
- gen_(JS_EMU_X,						REGS_NO_DEFAULT,					"x axis joystick emulation")										\
- gen_(JS_EMU_Y,						REGS_NO_DEFAULT,					"y axis joystick emulation")										\
 																																			\
  /* NV regs. */																																\
  gen_(ENABLES,						0,									"Enable flags")														\
- gen_(HX711_FILTER_K,				0,									"Filtering parameter applied to HX711 readings")					\
+ gen_(JS_FILTER_K,				0,									"Filtering parameter applied to JS readings")					\
  gen_(MOUSE_XY_DEADBAND,			500,								"mouse deadband")													\
  gen_(MOUSE_XY_SCALE,				2000,								"mouse scale factor reading -> delta")								\
  
@@ -42,7 +40,7 @@ void regsExtraSetDefaults(); // Defined in regs.local.cpp
 // Flags are defined with 3 parameters, name, bit position and a short description that is turned into help text. 
 #define REGS_FLAGS_DEFS(gen_)																							\
  /* Signal flags. */																									\
- gen_(HX711_UPDATE,					0,  "HX711 data available")															\
+ gen_(JS_UPDATE,					0,  "JS data available")															\
  gen_(RELAY_0,						1,  "relay 0")																		\
  gen_(RELAY_1,						2,  "relay 1")																		\
  gen_(RELAY_2,						3,  "relay 2")																		\
@@ -58,12 +56,11 @@ void regsExtraSetDefaults(); // Defined in regs.local.cpp
 #define REGS_ENABLES_DEFS(gen_)																							\
  gen_(DUMP_REGS,			0,	"Regs values dump to console")															\
  gen_(DUMP_REGS_FAST,		1,	"Dump at 5/s rather than 1/s")															\
- gen_(DUMP_HX711,			2,	"Dump HX711 readings")																	\
+ gen_(DUMP_JS,				2,	"Dump JS readings")																	\
  gen_(MOUSE_EMULATION,		3,	"Enable mouse emulation")																\
  gen_(AXIS_INVERT_X,		4,	"Invert x axis")																		\
  gen_(AXIS_INVERT_Y,		5,	"Invert y axis")																		\
  gen_(AXIS_INVERT_Z,		6,	"Invert z axis")																		\
- gen_(JOYSTICK_EMULATION,	7,	"Emulate joystick")																		\
 
 // Generate FLAGS defs.
 //
