@@ -83,9 +83,7 @@ enum {
 #define GPIO_BIT_DEBUG_LED 5
 
 // Extra debug LED.
-#define GPIO_PORT_DEBUG_LED_1 D
-#define GPIO_BIT_DEBUG_LED_1 2
-GPIO_DECLARE_PIN_ACCESS_FUNCS(DebugLed1, GPIO_PORT_DEBUG_LED_1, GPIO_BIT_DEBUG_LED_1);
+// GPIO_DECLARE_PIN_ACCESS_FUNCS(DebugLed1, GPIO_PORT_DEBUG_LED_1, GPIO_BIT_DEBUG_LED_1);
 
 // Serial ports.
 #define GPIO_SERIAL_CONSOLE				 Serial
@@ -149,7 +147,7 @@ enum {
 	GPIO_PIN_RLY_0 =					8,
 	GPIO_PIN_RLY_1 =					9,
 	GPIO_PIN_RLY_2 =					10,
-	GPIO_PIN_RLY_3 =					11,
+	GPIO_PIN_RLY_3 =					2,
 
 	// I2C interface (setup by Wire/TWI lib).
 //	GPIO_PIN_SDA = 					2,
@@ -175,9 +173,7 @@ enum {
 #define GPIO_BIT_DEBUG_LED 5
 
 // Extra debug LED. 
-#define GPIO_PORT_DEBUG_LED_1 B
-#define GPIO_BIT_DEBUG_LED_1 0
-GPIO_DECLARE_PIN_ACCESS_FUNCS(DebugLed1, GPIO_PORT_DEBUG_LED_1, GPIO_BIT_DEBUG_LED_1);
+//GPIO_DECLARE_PIN_ACCESS_FUNCS(DebugLed1, GPIO_PORT_DEBUG_LED_1, GPIO_BIT_DEBUG_LED_1);
 
 // Serial ports.
 #define GPIO_SERIAL_CONSOLE				 Serial1

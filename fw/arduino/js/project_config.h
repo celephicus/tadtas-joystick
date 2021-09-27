@@ -21,7 +21,7 @@
 #define CFG_CONSOLE_INPUT_ACCEPT_BUFFER_SIZE (32)
 
 // Mouse emulation?
-// #define CFG_WANT_MOUSE
+#define CFG_WANT_MOUSE 0 
 
 // Use emulated strain gauge joystick?
 #ifndef CFG_WANT_JS_EMULATION

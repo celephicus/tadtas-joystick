@@ -73,6 +73,7 @@ enum {
 	CONSOLE_RC_ERROR_UNKNOWN_COMMAND =			4,	// A command or value was not recognised.
 	CONSOLE_RC_ERROR_ACCEPT_BUFFER_OVERFLOW =	5,	// Accept input buffer has been sent more characters than it can hold. Only returned by consoleAccept(). 
 	CONSOLE_RC_ERROR_INDEX_OUT_OF_RANGE =		6,	// Index out of range.
+	CONSOLE_RC_ERROR_DIVISON_BY_ZERO =			7,	// Divide by zero.
 	CONSOLE_RC_ERROR_USER,							// Error codes available for the user.
 	
 	// Status...

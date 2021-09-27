@@ -1,11 +1,12 @@
 #include <Arduino.h>
-#ifdef CFG_WANT_MOUSE
-#include "Mouse.h"
-#endif
 
 #include "project_config.h"
 #include "debug.h"
 FILENUM(1);
+
+#if CFG_WANT_MOUSE
+#include "Mouse.h"
+#endif
 
 #include "utils.h"
 #include "regs.h"
@@ -27,18 +28,17 @@ static void gpio_init() {
   gpioInit();
   gpioDebugLedSetModeOutput();
   gpioDebugLedSet();
-  gpioDebugLed1SetModeOutput();
-  gpioDebugLed1Set();
 }
 
 static bool console_cmds_user(char* cmd) {
 	switch (console_hash(cmd)) {
 		case /** + **/ 0XB58E: console_binop(+); break;
 		case /** - **/ 0XB588: console_binop(-); break;
+		case /** * **/ 0XB58F : console_binop(*); break;
+		case /** / **/ 0XB58A : console_verify_can_pop(2); { const console_cell_t divisor = console_u_pop(); if (0 == divisor) { console_drop(); console_raise(CONSOLE_RC_ERROR_DIVISON_BY_ZERO); } console_u_tos() = console_u_tos() / divisor; }; break;
 		case /** NEGATE **/ 0X7A79: console_unop(-); break;
 		case /** # **/ 0XB586: console_raise(CONSOLE_RC_STATUS_IGNORE_TO_EOL); break;
 		case /** LED **/ 0XDC88: gpioDebugLedWrite(!console_u_pop()); break;
-		case /** LED1 **/ 0X6DB9: gpioDebugLed1Write(!console_u_pop()); break;
 		case /** .S **/ 0X66B8: { uint8_t i = console_u_depth(); while (i > 0) consolePrint(CONSOLE_PRINT_SIGNED, console_u_pick(--i)); } break; 
 
 		REGS_CONSOLE_COMMANDS_NV
@@ -74,12 +74,9 @@ void debugRuntimeError(uint8_t fileno, uint16_t lineno, uint8_t errorno) {
 	delay(100);		// Allow serial data to escape.
 	cli();
 	gpioDebugLedSetModeOutput();
-	gpioDebugLed1SetModeOutput();
 	gpioDebugLedSet();
-	gpioDebugLed1Clear();
 	while (1) {
 		gpioDebugLedToggle();
-		gpioDebugLed1Toggle();
 		fori(6) delayMicroseconds(16000);		// delay() doesn't work if interrupts off. 
 		wdt_reset();
 	}
@@ -91,7 +88,7 @@ void setup() {
 	regsInit();
 	console_init();
 	driverInit();
-#ifdef CFG_WANT_MOUSE
+#if CFG_WANT_MOUSE
 	Mouse.begin();
 #endif
 }
@@ -121,7 +118,7 @@ static void service_hx711() {
 		}
  	}
 
-#ifdef CFG_WANT_MOUSE
+#if CFG_WANT_MOUSE
 	if (REGS[REGS_IDX_ENABLES] & REGS_ENABLES_MASK_MOUSE_EMULATION) {
 			int8_t delta[2] = {0, 0};
 			fori (2) {

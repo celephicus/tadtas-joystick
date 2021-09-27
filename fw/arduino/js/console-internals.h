@@ -37,8 +37,8 @@ void console_u_push(console_cell_t x);
 void console_u_clear();
 
 /* Some helper macros for commands. */
-#define console_binop(op_)	{ const console_cell_t rhs = console_u_pop(); console_u_tos() = console_u_tos() op_ rhs; } 	// Implement a binary operator.
-#define console_unop(op_)	{ console_u_tos() = op_ console_u_tos(); }											// Implement a unary operator.
+#define console_binop(op_)	{ console_verify_can_pop(2); const console_cell_t rhs = console_u_pop(); console_u_tos() = console_u_tos() op_ rhs; } 	// Implement a binary operator.
+#define console_unop(op_)	{ console_verify_can_pop(1); console_u_tos() = op_ console_u_tos(); }											// Implement a unary operator.
 
 /* Hash function as we store command names as a 16 bit hash. Lower case letters are converted to upper case.
 	The values came from Wikipedia and seem to work well, in that collisions between the hash values of different commands are very rare.
